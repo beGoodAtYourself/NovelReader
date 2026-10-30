@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import io.legado.app.base.BaseRuleViewModel
 import io.legado.app.data.entities.DictRule
 import io.legado.app.data.repository.DictRuleRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.list.InteractionState
 import io.legado.app.utils.GSON
@@ -27,12 +26,10 @@ import kotlinx.coroutines.withContext
 
 class DictRuleViewModel(
     application: Application,
-    uploadRepository: UploadRepository,
     private val repository: DictRuleRepository,
 ) : BaseRuleViewModel<DictRuleItemUi, DictRule, String, DictRuleUiState>(
     application,
     DictRuleUiState(interaction = InteractionState(isLoading = true)),
-    uploadRepository
 ) {
     private val _effects = MutableSharedFlow<DictRuleEffect>(extraBufferCapacity = 16)
     val effects = _effects.asSharedFlow()
@@ -60,10 +57,7 @@ class DictRuleViewModel(
                 delSelectionByIds(uiState.value.selectedIds)
                 setSelection(emptySet())
             }
-            DictRuleIntent.UploadSelection -> {
-                val state = uiState.value
-                uploadSelectedRules(state.selectedIds, state.items)
-            }
+            DictRuleIntent.UploadSelection -> Unit
             is DictRuleIntent.ExportSelection -> {
                 val state = uiState.value
                 exportToUri(intent.uri, state.items, state.selectedIds)

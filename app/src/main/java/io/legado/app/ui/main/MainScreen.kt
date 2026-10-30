@@ -35,7 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -82,7 +82,6 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import io.legado.app.R
-import io.legado.app.feature.explore.ExploreMainRoute
 import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleEndPadding
 import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleSize
 import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleSlot
@@ -91,10 +90,8 @@ import io.legado.app.ui.book.readaloud.morph.ReadAloudMorphState
 import io.legado.app.ui.main.bookshelf.BookShelfItem
 import io.legado.app.ui.main.bookshelf.BookshelfRouteScreen
 import io.legado.app.ui.main.bookshelf.BookshelfViewModel
-import io.legado.app.ui.main.home.HomeRouteScreen
 import io.legado.app.ui.main.my.MyRouteScreen
 import io.legado.app.ui.main.my.PrefClickEvent
-import io.legado.app.ui.main.rss.RssRouteScreen
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.AppScaffold
@@ -111,7 +108,6 @@ import io.legado.app.ui.widget.components.navigation.AppNavigationBarItem
 import io.legado.app.ui.widget.components.pager.rememberPagerFlingPassThroughConnection
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.sendToClip
-import io.legado.app.utils.startActivityForBook
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -313,10 +309,10 @@ fun MainScreen(
                             modifier = Modifier
                                 .align(Alignment.Start)
                                 .padding(start = NavigationRailDefaults.ExpandedItemHorizontalMargin),
-                            onClick = { onNavigateToSearch(null) },
+                            onClick = onNavigateToLocalImport,
                         ) {
                             AppIcon(
-                                Icons.Default.Search,
+                                Icons.Default.Add,
                                 contentDescription = null,
                                 tint = Color.White
                             )
@@ -404,9 +400,9 @@ fun MainScreen(
 
                         ExtendedFloatingActionButton(
                             modifier = Modifier.padding(start = 20.dp),
-                            onClick = { onNavigateToSearch(null) },
+                            onClick = onNavigateToLocalImport,
                             expanded = expanded,
-                            icon = { AppIcon(Icons.Default.Search, contentDescription = null) },
+                            icon = { AppIcon(Icons.Default.Add, contentDescription = null) },
                             text = { AppText(stringResource(R.string.search)) }
                         )
                     }
@@ -554,28 +550,6 @@ fun MainScreen(
                         )
                         CompositionLocalProvider(LocalLifecycleOwner provides pageLifecycleOwner) {
                             when (destination) {
-                            MainDestination.Home -> HomeRouteScreen(
-                                onOpenBook = { book ->
-                                    context.startActivityForBook(book)
-                                },
-                                onNavigateToBookInfo = { name, author, bookUrl, origin, coverPath, sharedCoverKey ->
-                                    onNavigateToBookInfo(
-                                        name ?: "",
-                                        author ?: "",
-                                        bookUrl,
-                                        origin,
-                                        coverPath,
-                                        sharedCoverKey,
-                                    )
-                                },
-                                onOpenExploreShow = onNavigateToExploreShow,
-                                onOpenBackupSettings = onNavigateToBackupSettings,
-                                onNavigateToReadRecord = onNavigateToReadRecord,
-                                onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            )
-
                             MainDestination.Bookshelf -> BookshelfRouteScreen(
                                 scrollToTopRequest = bookshelfScrollToTopRequest,
                                 onScrollToTopRequestHandled = { handledRequest ->
@@ -586,7 +560,7 @@ fun MainScreen(
                                 onBookClick = { book, sharedCoverKey ->
                                     onOpenBookshelfBook(book, sharedCoverKey)
                                 },
-                                onBookLongClick = { book, sharedCoverKey ->
+                                onBookInfo = { book, sharedCoverKey ->
                                     onNavigateToBookInfo(
                                         book.name,
                                         book.author,
@@ -605,48 +579,9 @@ fun MainScreen(
                                 animatedVisibilityScope = animatedVisibilityScope,
                             )
 
-                                MainDestination.Explore -> ExploreMainRoute(
-                                onOpenExploreShow = onNavigateToExploreShow,
-                                    onBookClick = { book, sharedCoverKey ->
-                                        onNavigateToBookInfo(
-                                            book.name,
-                                            book.author,
-                                            book.bookUrl,
-                                            book.origin,
-                                            book.coverUrl,
-                                            sharedCoverKey,
-                                        )
-                                    },
-                                onOpenLogin = { sourceUrl ->
-                                    onNavigateToSourceLogin(
-                                        io.legado.app.ui.login.SourceLoginType.BookSource,
-                                        sourceUrl,
-                                    )
-                                },
-                                onOpenEdit = onNavigateToBookSourceEdit,
-                                onOpenSearch = onNavigateToScopedSearch,
-                            )
-                            MainDestination.Rss -> RssRouteScreen(
-                                onOpenSort = { sourceUrl, sortUrl, key ->
-                                    onNavigateToRssSort(sourceUrl, sortUrl, key)
-                                },
-                                onOpenRead = { title, origin, link, openUrl, startPage ->
-                                    onNavigateToRssRead(title, origin, link, openUrl, startPage)
-                                },
-                                onOpenFavorites = onNavigateToRssFavorites,
-                                onOpenRuleSub = onNavigateToRuleSub,
-                                onOpenLogin = { sourceUrl ->
-                                    onNavigateToSourceLogin(
-                                        io.legado.app.ui.login.SourceLoginType.RssSource,
-                                        sourceUrl,
-                                    )
-                                },
-                                onOpenSourceEdit = onNavigateToRssSourceEdit,
-                                onOpenSourceManage = onNavigateToRssSourceManage,
-                            )
+                            MainDestination.Home, MainDestination.Explore, MainDestination.Rss -> Unit
                             MainDestination.My -> MyRouteScreen(
                                 onOpenSettings = onOpenSettings,
-                                onNavigateToChat = onNavigateToChat,
                                 onNavigate = { event ->
                                     when (event) {
                                         PrefClickEvent.OpenBookCacheManage -> onNavigateToBookCacheManage()

@@ -1,18 +1,9 @@
 package io.legado.app.utils
 
-import android.annotation.SuppressLint
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
 import io.legado.app.constant.AppLog
 import okhttp3.internal.publicsuffix.PublicSuffixDatabase
-import splitties.systemservices.connectivityManager
-import java.net.InetAddress
-import java.net.NetworkInterface
-import java.net.SocketException
 import java.net.URL
 import java.util.BitSet
-import java.util.Enumeration
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 object NetworkUtils {
@@ -23,43 +14,6 @@ object NetworkUtils {
         "(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))"
     )
 
-
-    /**
-     * 判断是否联网
-     */
-    @SuppressLint("ObsoleteSdkInt")
-    @Suppress("DEPRECATION")
-    fun isAvailable(): Boolean {
-        if (Build.VERSION.SDK_INT < 23) {
-            val mWiFiNetworkInfo = connectivityManager.activeNetworkInfo
-            if (mWiFiNetworkInfo != null) {
-                // WIFI
-                return mWiFiNetworkInfo.type == ConnectivityManager.TYPE_WIFI ||
-                        // 移动数据
-                        mWiFiNetworkInfo.type == ConnectivityManager.TYPE_MOBILE ||
-                        // 以太网
-                        mWiFiNetworkInfo.type == ConnectivityManager.TYPE_ETHERNET ||
-                        // VPN
-                        mWiFiNetworkInfo.type == ConnectivityManager.TYPE_VPN
-            }
-        } else {
-            val network = connectivityManager.activeNetwork
-            if (network != null) {
-                val nc = connectivityManager.getNetworkCapabilities(network)
-                if (nc != null) {
-                    // WIFI
-                    return nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                            // 移动数据
-                            nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                            // 以太网
-                            nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
-                            // VPN
-                            nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                }
-            }
-        }
-        return false
-    }
 
     private val notNeedEncodingQuery: BitSet by lazy {
         val bitSet = BitSet(256)
@@ -245,33 +199,6 @@ object NetworkUtils {
         return kotlin.runCatching {
             URL(baseUrl).host
         }.getOrDefault(baseUrl)
-    }
-
-    /**
-     * Get local Ip address.
-     */
-    fun getLocalIPAddress(): List<InetAddress> {
-        val enumeration: Enumeration<NetworkInterface>
-        try {
-            enumeration = NetworkInterface.getNetworkInterfaces()
-        } catch (e: SocketException) {
-            e.printOnDebug()
-            return emptyList()
-        }
-
-        val addressList = mutableListOf<InetAddress>()
-
-        while (enumeration.hasMoreElements()) {
-            val nif = enumeration.nextElement()
-            val addresses = nif.inetAddresses ?: continue
-            while (addresses.hasMoreElements()) {
-                val address = addresses.nextElement()
-                if (!address.isLoopbackAddress && isIPv4Address(address.hostAddress)) {
-                    addressList.add(address)
-                }
-            }
-        }
-        return addressList
     }
 
     /**

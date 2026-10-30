@@ -3,6 +3,7 @@ package io.legado.app.ui.book.searchContent
 import android.app.Application
 import android.os.Looper
 import androidx.room.Room
+import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.SearchContentHistory
@@ -83,7 +84,7 @@ class SearchContentHistoryRecordingTest {
 
     private fun viewModel(initialSearchWord: String?): SearchContentViewModel {
         runBlocking {
-            db.bookDao.insert(Book(bookUrl = BOOK_URL, name = "测试书", author = "作者"))
+            db.bookDao.insert(Book(type = BookType.text or BookType.local, bookUrl = BOOK_URL, name = "测试书", author = "作者"))
         }
         return SearchContentViewModel(
             bookUrl = BOOK_URL,
@@ -129,6 +130,6 @@ class SearchContentHistoryRecordingTest {
     }
 
     private companion object {
-        const val BOOK_URL = "test://book/1"
+        const val BOOK_URL = "file:///books/search.txt"
     }
 }

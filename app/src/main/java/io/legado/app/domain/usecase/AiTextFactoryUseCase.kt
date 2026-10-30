@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 
 class AiTextFactoryUseCase(
     private val aiProfileGateway: AiProfileGateway,
-    private val aiToolAwareGenerationUseCase: AiToolAwareGenerationUseCase,
+    private val aiToolAwareGenerationUseCase: AiGenerationUseCase,
     private val aiArtifactGateway: AiArtifactGateway,
     private val aiTaskManager: AiTaskManager,
 ) {
@@ -60,7 +60,7 @@ class AiTextFactoryUseCase(
             buildUserInput(request.chapterTitle, request.inputText, request.referenceText)
         val contentHash = request.artifactContentHash ?: MD5Utils.md5Encode(userInput)
         val promptHash = MD5Utils.md5Encode(
-            systemPrompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION,
+            systemPrompt + AiGenerationUseCase.CACHE_PROMPT_VERSION,
         )
         val now = System.currentTimeMillis()
         val artifact = AiArtifact(
@@ -102,7 +102,7 @@ class AiTextFactoryUseCase(
             )
             val contentHash = request.artifactContentHash ?: MD5Utils.md5Encode(userInput)
             val promptHash = MD5Utils.md5Encode(
-                systemPrompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+                systemPrompt + AiGenerationUseCase.CACHE_PROMPT_VERSION
             )
 
             if (!request.skipCache) {
@@ -183,7 +183,7 @@ class AiTextFactoryUseCase(
         )
         val contentHash = request.artifactContentHash ?: MD5Utils.md5Encode(userInput)
         val promptHash = MD5Utils.md5Encode(
-            systemPrompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+            systemPrompt + AiGenerationUseCase.CACHE_PROMPT_VERSION
         )
 
         if (!request.skipCache) {

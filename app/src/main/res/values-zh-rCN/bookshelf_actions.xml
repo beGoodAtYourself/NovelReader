@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_bookshelf_delete_single_message">要从书架删除《%1$s》吗？</string>
+    <string name="feature_bookshelf_keep_source_hint">源文件会保留，可重新导入。</string>
+</resources>

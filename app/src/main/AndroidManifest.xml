@@ -4,21 +4,19 @@
 
     <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- 自 Android 17 (API 37) 起本地网络保护强制生效：接受局域网入站连接需要该运行时权限，
-         否则 Web 服务对局域网内其他设备不可达。targetSdk < 37 时不得声明该权限。 -->
-    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" tools:node="remove" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" tools:node="remove" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
@@ -31,10 +29,9 @@
 
     <application
         android:name=".App"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="${app_name}"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="true"
         android:hardwareAccelerated="true"
@@ -246,11 +243,6 @@
             android:enableOnBackInvokedCallback="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask" />
-        <activity
-            android:name=".ui.dict.DictActivity"
-            android:enableOnBackInvokedCallback="true"
-            android:configChanges="locale|layoutDirection|uiMode|orientation|screenSize|screenLayout"
-            android:hardwareAccelerated="true" />
         <!-- 文件管理 -->
         <activity
             android:name=".ui.file.FileManageActivity"
@@ -258,52 +250,9 @@
             android:configChanges="locale|layoutDirection|uiMode|orientation|screenSize|screenLayout"
             android:hardwareAccelerated="true" />
         <!-- 文字处理 -->
-        <activity
-            android:name=".receiver.SharedReceiverActivity"
-            android:exported="true"
-            android:label="@string/receiving_shared_label"
-            android:theme="@style/AppTheme.Transparent">
-            <intent-filter>
-                <action android:name="android.intent.action.PROCESS_TEXT" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity>
         <!-- 一键导入 -->
-        <activity
-            android:name=".ui.association.OnLineImportActivity"
-            android:configChanges="locale|layoutDirection|uiMode|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:exported="true"
-            android:theme="@style/AppTheme.Transparent">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="legado" />
-                <data android:scheme="yuedu" />
-            </intent-filter>
-        </activity>
         <!-- 验证码输入 -->
-        <activity
-            android:name=".ui.association.VerificationCodeActivity"
-            android:configChanges="locale|layoutDirection|uiMode|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:theme="@style/AppTheme.Transparent" />
         <!-- 跳转确认 -->
-        <activity
-            android:name=".ui.association.OpenUrlConfirmActivity"
-            android:configChanges="locale|layoutDirection|uiMode|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:theme="@style/AppTheme.Transparent" />
         <!-- 打开文件 -->
         <activity
             android:name=".ui.association.FileAssociationActivity"
@@ -397,41 +346,11 @@
         </activity>
 
         <service
-            android:name=".service.CacheBookService"
-            android:foregroundServiceType="dataSync" />
-        <service
-            android:name=".service.BookSourceCheckService"
-            android:foregroundServiceType="dataSync" />
-        <service
             android:name=".service.ExportBookService"
             android:foregroundServiceType="dataSync" />
         <service
-            android:name=".service.WebService"
-            android:foregroundServiceType="dataSync" />
-        <service
-            android:name=".service.WebTileService"
-            android:exported="true"
-            android:foregroundServiceType="dataSync"
-            android:icon="@drawable/ic_web_service_noti"
-            android:label="legado Web Service"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
-            >
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
-            </intent-filter>
-        </service>
-        <service
             android:name=".service.TTSReadAloudService"
             android:foregroundServiceType="mediaPlayback" />
-        <service
-            android:name=".service.HttpReadAloudService"
-            android:foregroundServiceType="mediaPlayback" />
-        <service
-            android:name=".service.AudioPlayService"
-            android:foregroundServiceType="mediaPlayback" />
-        <service
-            android:name=".service.DownloadService"
-            android:foregroundServiceType="dataSync" />
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
@@ -452,12 +371,6 @@
         </receiver>
 
         <provider
-            android:name=".api.ReaderProvider"
-            android:authorities="${applicationId}.readerProvider"
-            android:enabled="true"
-            android:exported="true"
-            tools:ignore="ExportedContentProvider" />
-        <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileProvider"
             android:exported="false"
@@ -475,12 +388,6 @@
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"
                 tools:node="remove" />
         </provider>
-
-        <provider
-            android:name="com.google.firebase.provider.FirebaseInitProvider"
-            android:authorities="${applicationId}.firebaseinitprovider"
-            android:exported="false"
-            tools:node="remove" />
 
         <meta-data
             android:name="channel"

@@ -72,7 +72,7 @@ class ReadSettingsMappingTest {
             val actual = with(repository) {
                 expected.expectedGatewayPrefMap().toTestPreferences().toReadSettings()
             }
-            assertEquals(expected, actual)
+            assertEquals(expected.copy(autoChangeSource = false, defaultSourceChangeAll = false), actual)
         }
     }
 

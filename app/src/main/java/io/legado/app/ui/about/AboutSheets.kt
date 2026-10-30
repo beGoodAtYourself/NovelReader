@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.BuildConfig
 import io.legado.app.R
-import io.legado.app.help.update.AppUpdate
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.button.PrimaryButton
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
@@ -55,126 +54,6 @@ fun MarkdownSheet(
                 )
                 Spacer(modifier = Modifier.heightIn(min = 16.dp))
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun UpdateSheet(
-    show: Boolean,
-    updateInfo: AppUpdate.UpdateInfo,
-    updateToVariant: String,
-    mode: UpdateMode,
-    onDismissRequest: () -> Unit,
-    onStartDownload: () -> Unit,
-) {
-    val title = when (mode) {
-        UpdateMode.UPDATE -> stringResource(R.string.check_update)
-        UpdateMode.VIEW_LOG -> stringResource(R.string.about_installed_version_title)
-    }
-
-    AppModalBottomSheet(
-        show = show,
-        onDismissRequest = onDismissRequest,
-        title = title,
-        animateContentSize = false,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .heightIn(max = 560.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            if (mode == UpdateMode.UPDATE) {
-                Row(
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AppText(
-                        text = stringResource(R.string.about_current_version),
-                        style = LegadoTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AppText(
-                        text = BuildConfig.VERSION_NAME,
-                        style = LegadoTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Row(
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AppText(
-                        text = stringResource(R.string.about_new_version),
-                        style = LegadoTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AppText(
-                        text = updateInfo.tagName,
-                        style = LegadoTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Row(
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AppText(
-                        text = "ABI",
-                        style = LegadoTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AppText(
-                        text = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown",
-                        style = LegadoTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Row(
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AppText(
-                        text = stringResource(R.string.about_update_channel),
-                        style = LegadoTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AppText(
-                        text = updateToVariant,
-                        style = LegadoTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            } else {
-                AppText(
-                    text = BuildConfig.VERSION_NAME,
-                    style = LegadoTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-            }
-
-            val updateLog = updateInfo.updateLog
-            if (updateLog.isNotBlank()) {
-                SelectionContainer {
-                    MarkdownBlock(
-                        content = updateLog,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        if (mode == UpdateMode.UPDATE) {
-            Spacer(modifier = Modifier.height(16.dp))
-            PrimaryButton(
-                onClick = onStartDownload,
-                text = stringResource(R.string.about_update_action),
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }

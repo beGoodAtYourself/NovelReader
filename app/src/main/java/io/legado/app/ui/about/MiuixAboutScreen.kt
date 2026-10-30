@@ -387,15 +387,11 @@ private fun AboutContent(
                         ),
                     ) {
                         ArrowPreference(
-                            title = stringResource(R.string.check_update),
-                            onClick = { onIntent(AboutIntent.CheckUpdate) },
-                        )
-                        ArrowPreference(
                             title = stringResource(R.string.contributors),
                             endActions = {
                                 ValueText("GitHub")
                             },
-                            onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) },
+                            onClick = { onIntent(AboutIntent.ShowMdFile("Legado / 阅读 MD3", "localCredits.md")) },
                         )
                     }
 

@@ -74,7 +74,6 @@ import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setChapter
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeUrl.Companion.paramPattern
 import io.legado.app.model.reader.ReaderChapterInput
-import io.legado.app.receiver.NetworkChangedListener
 import io.legado.app.receiver.TimeBatteryReceiver
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.ui.association.OpenUrlConfirmActivity
@@ -330,7 +329,6 @@ class ReadBookController(
     private var tts: TTS? = null
     private val timeBatteryReceiver = TimeBatteryReceiver()
     private var timeBatteryReceiverRegistered = false
-    private val networkChangedListener by lazy { NetworkChangedListener(activity) }
     private val handler by lazy { buildMainHandler() }
     private val screenOffRunnable by lazy { Runnable { keepScreenOn(false) } }
     private val _textMenuState = MutableStateFlow<TextMenuState?>(null)
@@ -486,7 +484,6 @@ class ReadBookController(
         tts = null
         dismissTextActionMenu()
         popupAction.dismiss()
-        networkChangedListener.unRegister()
         unregisterTimeBatteryReceiver()
         restoreActivityWindowState()
     }
@@ -592,7 +589,11 @@ class ReadBookController(
         is ReaderElement.Text -> when {
             element.markingId != null -> { onMarkingClick(element.markingId); true }
             element.link != null -> {
-                activity.startActivity(Intent(activity, OpenUrlConfirmActivity::class.java).putExtra("uri", element.link))
+                if (io.legado.app.domain.model.LocalReadingPolicy.acceptsAddress(element.link)) {
+                    activity.startActivity(Intent(activity, OpenUrlConfirmActivity::class.java).putExtra("uri", element.link))
+                } else {
+                    activity.toastOnUi(R.string.local_reader_only)
+                }
                 true
             }
             else -> false
@@ -650,19 +651,7 @@ class ReadBookController(
             ReaderTapAction.TOGGLE_REPLACE -> viewModel.onIntent(ReadBookIntent.MenuEnableReplace)
             ReaderTapAction.OPEN_CHAPTER_LIST -> viewModel.onIntent(ReadBookIntent.OpenChapterList)
             ReaderTapAction.OPEN_SEARCH -> viewModel.onIntent(ReadBookIntent.OpenSearch(null))
-            ReaderTapAction.SYNC_PROGRESS -> ReadBook.syncProgress(
-                newProgressAction = { progress ->
-                    activity.runOnUiThread {
-                        viewModel.onIntent(ReadBookIntent.SureNewProgress(progress))
-                    }
-                },
-                uploadSuccessAction = {
-                    activity.longToastOnUi(activity.getString(R.string.upload_book_success))
-                },
-                syncSuccessAction = {
-                    activity.longToastOnUi(activity.getString(R.string.sync_book_progress_success))
-                },
-            )
+            ReaderTapAction.SYNC_PROGRESS -> Unit
             ReaderTapAction.TOGGLE_READ_ALOUD_PAUSE -> if (BaseReadAloudService.isPlay()) {
                 ReadAloud.pause(activity)
             } else {
@@ -1841,8 +1830,6 @@ class ReadBookController(
         upScreenTimeOut()
         handleEffect(ReadBookEffect.UpTime)
         registerTimeBatteryReceiver()
-        networkChangedListener.onNetworkChanged = viewModel::onNetworkChanged
-        networkChangedListener.register()
         readerSessionViewModel.requestRedraw()
     }
 
@@ -1850,7 +1837,6 @@ class ReadBookController(
     fun onPause() {
         stopAutoPage()
         unregisterTimeBatteryReceiver()
-        networkChangedListener.unRegister()
         upSystemUiVisibility()
         if (!BuildConfig.DEBUG) Backup.autoBack(activity)
     }
@@ -2157,15 +2143,11 @@ class ReadBookController(
             val items = mutableListOf<ActionMenuItem>()
             items.add(ActionMenuItem(R.id.menu_copy, activity.getString(android.R.string.copy)))
             items.add(ActionMenuItem(R.id.menu_share_str, activity.getString(R.string.share)))
-            items.add(ActionMenuItem(R.id.menu_browser, activity.getString(R.string.browser)))
             items.add(ActionMenuItem(R.id.menu_aloud, activity.getString(R.string.read_aloud)))
             items.add(ActionMenuItem(R.id.menu_bookmark, activity.getString(R.string.bookmark)))
             items.add(ActionMenuItem(R.id.menu_mark, activity.getString(R.string.menu_mark)))
-            items.add(ActionMenuItem(R.id.menu_dict, activity.getString(R.string.dict)))
             items.add(ActionMenuItem(R.id.menu_replace, activity.getString(R.string.replace)))
             items.add(ActionMenuItem(R.id.menu_edit, activity.getString(R.string.edit)))
-            items.add(ActionMenuItem(R.id.menu_ai_clean, activity.getString(R.string.ai_text_clean)))
-            items.add(ActionMenuItem(R.id.menu_ai_rewrite, activity.getString(R.string.ai_text_rewrite)))
             items.add(ActionMenuItem(R.id.menu_search_content, activity.getString(R.string.search_content)))
             items.add(
                 ActionMenuItem(
@@ -2180,27 +2162,7 @@ class ReadBookController(
                 )
             )
 
-            val thirdPartyItems = mutableListOf<ActionMenuItem>()
-            runCatching {
-                val pm = activity.packageManager
-                val intent = Intent().setAction(Intent.ACTION_PROCESS_TEXT).setType("text/plain")
-                val resolveInfos = pm.queryIntentActivities(intent, 0)
-                for (resolveInfo in resolveInfos) {
-                    val processIntent = Intent()
-                        .setAction(Intent.ACTION_PROCESS_TEXT)
-                        .putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false)
-                        .setClassName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name)
-                    
-                    val title = resolveInfo.loadLabel(pm).toString()
-                    val icon = if (readSettingsGateway.currentSettings.showSelectMenuIcon) {
-                        runCatching { resolveInfo.loadIcon(pm) }.getOrNull()
-                    } else null
-
-                    thirdPartyItems.add(ActionMenuItem(id = -1, title = title, iconDrawable = icon, intent = processIntent))
-                }
-            }
-
-            val allItems = items + thirdPartyItems
+            val allItems = items
             val configStr = readSettingsGateway.currentSettings.textSelectMenuConfig
             val result = if (configStr.isEmpty()) {
                 allItems

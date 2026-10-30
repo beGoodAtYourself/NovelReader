@@ -10,6 +10,8 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.ShelfBookSummary
 import io.legado.app.ui.main.bookshelf.BookShelfItem
 import kotlinx.coroutines.Dispatchers
+import io.legado.app.domain.model.LocalReadingPolicy
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
@@ -24,7 +26,7 @@ class BookRepository(
     }
 
     fun flowBook(bookUrl: String): Flow<Book?> {
-        return bookDao.flowGetBook(bookUrl)
+        return bookDao.flowGetBook(bookUrl).map { it?.takeIf { book -> LocalReadingPolicy.acceptsBook(book.type, book.bookUrl) } }
     }
 
     fun flowChapters(bookUrl: String): Flow<List<BookChapter>> {
@@ -32,7 +34,7 @@ class BookRepository(
     }
 
     fun getAllBooks(): Flow<List<Book>> {
-        return bookDao.flowAll()
+        return bookDao.flowAll().map { books -> books.filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) } }
     }
 
     suspend fun getBookCoverByNameAndAuthor(bookName: String, bookAuthor: String): String? {
@@ -53,13 +55,13 @@ class BookRepository(
 
     suspend fun getBook(bookUrl: String): Book? {
         return withContext(Dispatchers.IO) {
-            bookDao.getBook(bookUrl)
+            bookDao.getBook(bookUrl)?.takeIf { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
     }
 
     suspend fun getBook(name: String, author: String): Book? {
         return withContext(Dispatchers.IO) {
-            bookDao.getBook(name, author)
+            bookDao.getBook(name, author)?.takeIf { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
     }
 
@@ -70,10 +72,10 @@ class BookRepository(
     suspend fun getBooksByUrls(bookUrls: Set<String>): List<Book> = withContext(Dispatchers.IO) {
         if (bookUrls.isEmpty()) return@withContext emptyList()
         if (bookUrls.size <= SQLITE_MAX_BIND_PARAMETERS) {
-            return@withContext bookDao.getBooksByUrls(bookUrls)
+            return@withContext bookDao.getBooksByUrls(bookUrls).filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
         bookUrls.chunked(SQLITE_MAX_BIND_PARAMETERS).flatMap { chunk ->
-            bookDao.getBooksByUrls(chunk.toSet())
+            bookDao.getBooksByUrls(chunk.toSet()).filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
     }
 
@@ -84,7 +86,7 @@ class BookRepository(
     }
 
     fun flowBookShelfByGroup(groupId: Long): Flow<List<BookShelfItem>> {
-        return bookDao.flowBookShelfByGroup(groupId)
+        return bookDao.flowBookShelfByGroup(groupId).map { books -> books.filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) } }
     }
 
     fun flowSystemGroupCounts(): Flow<List<GroupBookCount>> {
@@ -92,15 +94,15 @@ class BookRepository(
     }
 
     fun flowAllBookShelfCount(): Flow<Int> {
-        return bookDao.flowAllBookShelfCount()
+        return getAllBooks().map { it.size }
     }
 
     fun flowUserGroupBookCount(groupId: Long): Flow<Int> {
-        return bookDao.flowUserGroupBookCount(groupId)
+        return flowBookShelfByGroup(groupId).map { it.size }
     }
 
     fun flowGroupPreview(groupId: Long): Flow<List<BookShelfItem>> {
-        return bookDao.flowGroupPreview(groupId)
+        return bookDao.flowGroupPreview(groupId).map { books -> books.filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) } }
     }
 
     suspend fun getChapter(bookUrl: String, index: Int): BookChapter? {
@@ -144,7 +146,7 @@ class BookRepository(
         withContext(Dispatchers.IO) {
             appDb.withTransaction {
                 bookDao.setReadRecordDisabled(bookUrl, disabled)
-                bookDao.getBook(bookUrl)
+                bookDao.getBook(bookUrl)?.takeIf { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
             }
         }
 
@@ -174,13 +176,13 @@ class BookRepository(
 
     suspend fun getAll(): List<Book> {
         return withContext(Dispatchers.IO) {
-            bookDao.getAll()
+            bookDao.getAll().filter { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
     }
 
     suspend fun getLastReadBook(): Book? {
         return withContext(Dispatchers.IO) {
-            bookDao.lastReadBook
+            bookDao.lastReadBook?.takeIf { LocalReadingPolicy.acceptsBook(it.type, it.bookUrl) }
         }
     }
 

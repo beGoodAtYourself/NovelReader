@@ -4,8 +4,6 @@ import android.app.Application
 import android.os.Looper
 import io.legado.app.R
 import io.legado.app.domain.gateway.AppLocaleGateway
-import io.legado.app.domain.gateway.DirectLinkRule
-import io.legado.app.domain.gateway.DirectLinkSettingsGateway
 import io.legado.app.domain.gateway.DownloadCacheSettingsGateway
 import io.legado.app.domain.gateway.OtherConfigSystemGateway
 import io.legado.app.domain.gateway.OtherSettingsGateway
@@ -49,7 +47,6 @@ class OtherConfigViewModelTest {
             readAloudSettingsGateway = FakeReadAloudSettingsGateway(),
             otherSettingsGateway = otherSettingsGateway,
             downloadCacheSettingsGateway = FakeDownloadCacheSettingsGateway(),
-            directLinkSettingsGateway = FakeDirectLinkSettingsGateway(),
             systemGateway = FakeOtherConfigSystemGateway(),
             initialState = OtherConfigUiState(),
         )
@@ -99,17 +96,7 @@ class OtherConfigViewModelTest {
         )
     }
 
-    @Test
-    fun directRule_writeThroughGateway() = runBlocking {
-        val directLinkGateway = FakeDirectLinkSettingsGateway()
-        val viewModel = createViewModel(directLinkSettingsGateway = directLinkGateway)
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
 
-        viewModel.onIntent(OtherConfigIntent.ConfirmDirectLinkRule)
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
-
-        assertEquals("Example", directLinkGateway.savedRule?.summary)
-    }
 
     @Test
     fun processTextSettingFailure_rollsBackSystemComponent() = runBlocking {
@@ -143,15 +130,12 @@ class OtherConfigViewModelTest {
 
     private fun createViewModel(
         otherSettingsGateway: FakeOtherSettingsGateway = FakeOtherSettingsGateway(),
-        directLinkSettingsGateway: FakeDirectLinkSettingsGateway =
-            FakeDirectLinkSettingsGateway(),
         systemGateway: FakeOtherConfigSystemGateway = FakeOtherConfigSystemGateway(),
     ) = OtherConfigViewModel(
         appLocaleGateway = FakeAppLocaleGateway(),
         readAloudSettingsGateway = FakeReadAloudSettingsGateway(),
         otherSettingsGateway = otherSettingsGateway,
         downloadCacheSettingsGateway = FakeDownloadCacheSettingsGateway(),
-        directLinkSettingsGateway = directLinkSettingsGateway,
         systemGateway = systemGateway,
         initialState = OtherConfigUiState(),
     )
@@ -215,21 +199,7 @@ class OtherConfigViewModelTest {
         }
     }
 
-    private class FakeDirectLinkSettingsGateway : DirectLinkSettingsGateway {
-        private val rule = DirectLinkRule(
-            uploadUrl = "https://example.com",
-            downloadUrlRule = "$.url",
-            summary = "Example",
-        )
-        var savedRule: DirectLinkRule? = null
 
-        override suspend fun loadRule(): DirectLinkRule = rule
-        override suspend fun loadDefaultRules(): List<DirectLinkRule> = listOf(rule)
-        override suspend fun saveRule(rule: DirectLinkRule) {
-            savedRule = rule
-        }
-        override suspend fun testRule(rule: DirectLinkRule): String = "ok"
-    }
 
     private class FakeOtherConfigSystemGateway : OtherConfigSystemGateway {
         var enabled = true

@@ -18,7 +18,6 @@ import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginationResult
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginator
 import io.legado.app.feature.reader.legacy.LegacyReaderPageDecorationFactory
 import io.legado.app.feature.reader.platform.AndroidReaderHtmlSemanticTextResolver
-import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.globalExecutor
@@ -219,13 +218,6 @@ class ReadAloudBookSession : KoinComponent {
                     }
                 }
             }.onFailure { AppLog.put("保存朗读进度失败", it) }
-        }
-    }
-
-    fun uploadProgress() {
-        val book = book ?: return
-        persistenceScope.launch {
-            AppWebDav.uploadBookProgress(book) { ReadBook.onProgressUploaded(book) }
         }
     }
 

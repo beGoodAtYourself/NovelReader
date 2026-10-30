@@ -1,5 +1,17 @@
 # Legado with MD3
 
+## 当前定制版：本地阅读
+
+本目录当前构建为 `3.26.19-local`，主界面只保留书架和“我的”。保留本地书籍导入、阅读排版、翻页、书签、阅读记录、本地封面、离线系统朗读和本地备份恢复。
+
+已移除发现、订阅、在线书源入口、远程书籍、WebDAV、Web 服务、联网 AI、翻译、云端朗读、自动更新和 Firebase 统计。安装包不申请互联网及局域网访问权限。系统朗读需要设备已安装离线音色。
+
+旧数据库结构和部分历史路由类型继续保留，便于覆盖安装和恢复本地备份。旧远程书籍不会在本地书架中展示，旧远程配置和导航不会重新启用功能；已有数据不会被批量删除。
+
+本机已配置便携构建环境，可运行 `./tools/build-local.ps1 -Configuration Release`。ARM64 安装包位于 `app/build/outputs/apk/app/release/`。`.local-build/` 中的 SDK、缓存和签名配置不提交到仓库；后续覆盖安装需沿用同一签名。
+
+以下保留上游项目介绍，功能范围以本地版说明为准。
+
 <p align="left">
   <a href="https://github.com/HapeLee/legado-with-MD3">简体中文</a> ｜ 
   <a href="https://github.com/HapeLee/legado-with-MD3/blob/main/English.md">English</a>

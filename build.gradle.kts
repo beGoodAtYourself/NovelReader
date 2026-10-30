@@ -202,9 +202,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false
-    alias(libs.plugins.google.services) apply false
     alias(libs.plugins.room) apply false
-    alias(libs.plugins.download) apply false
     alias(libs.plugins.android.test) apply false
     alias(libs.plugins.baselineprofile) apply false
 }
@@ -233,17 +231,13 @@ val verifyConfigArchitecture = tasks.register<VerifyConfigArchitectureTask>(
             "io/legado/app/help/config/ThemeConfigStore.kt" to 8,
             "io/legado/app/help/storage/Restore.kt" to 2,
             "io/legado/app/receiver/MediaButtonReceiver.kt" to 2,
-            "io/legado/app/service/WebService.kt" to 2,
             "io/legado/app/ui/association/ImportReplaceRuleDialog.kt" to 1,
-            "io/legado/app/ui/book/explore/ExploreShowViewModel.kt" to 2,
-            "io/legado/app/ui/book/read/ReadBookViewModel.kt" to 2,
+            "io/legado/app/ui/book/read/ReadBookViewModel.kt" to 0,
             "io/legado/app/ui/book/readRecord/ReadRecordViewModel.kt" to 1,
             "io/legado/app/ui/book/search/SearchViewModel.kt" to 3,
-            "io/legado/app/ui/config/CheckSourceConfig.kt" to 1,
-            "io/legado/app/ui/config/otherConfig/OtherConfigViewModel.kt" to 1,
+            "io/legado/app/ui/config/otherConfig/OtherConfigViewModel.kt" to 0,
             "io/legado/app/ui/replace/ReplaceRuleViewModel.kt" to 2,
             "io/legado/app/utils/ContextExtensions.kt" to 12,
-            "io/legado/app/web/socket/BookSearchWebSocket.kt" to 2,
         )
     )
     legacyDaoInjectionBaseline.set(
@@ -252,7 +246,6 @@ val verifyConfigArchitecture = tasks.register<VerifyConfigArchitectureTask>(
             // 保留 0 值条目让棘轮继续盯着这个文件——新增一处直连就报红。
             "io/legado/app/ui/book/read/ReadBookViewModel.kt" to 0,
             // 护栏缺席期间（MAD-3 未合并窗口）main 新增的直连，随合并冻结，清理归 Track A/F2
-            "io/legado/app/ui/book/readaloud/cloudtts/CloudTtsViewModel.kt" to 5,
         )
     )
     // 非 ViewModel 的 UI 层文件直连 DAO 的历史债，只冻结不修复；
@@ -268,7 +261,6 @@ val verifyConfigArchitecture = tasks.register<VerifyConfigArchitectureTask>(
             "io/legado/app/ui/book/search/SearchScope.kt" to 4,
             "io/legado/app/ui/config/bookshelfConfig/BookshelfManageScreenConfig.kt" to 1,
             "io/legado/app/ui/main/MainNavGraph.kt" to 2,
-            "io/legado/app/ui/rss/article/RssArticlesCompose.kt" to 1,
             "io/legado/app/ui/rss/read/RssJsExtensions.kt" to 8,
             "io/legado/app/ui/widget/dialog/BottomWebViewDialog.kt" to 1,
         )

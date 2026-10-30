@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import io.legado.app.base.BaseRuleViewModel
 import io.legado.app.data.entities.HighlightTagRule
 import io.legado.app.data.repository.HighlightTagRuleRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.list.InteractionState
 import io.legado.app.utils.GSON
@@ -27,11 +26,9 @@ import kotlinx.coroutines.withContext
 
 class HighlightTagRuleViewModel(
     application: Application,
-    uploadRepository: UploadRepository
 ) : BaseRuleViewModel<HighlightTagRuleItemUi, HighlightTagRule, Long, HighlightTagRuleUiState>(
     application,
     HighlightTagRuleUiState(interaction = InteractionState(isLoading = true)),
-    uploadRepository
 ) {
     private val repository = HighlightTagRuleRepository()
     private val _effects = MutableSharedFlow<HighlightTagRuleEffect>(extraBufferCapacity = 16)
@@ -60,10 +57,7 @@ class HighlightTagRuleViewModel(
                 delSelectionByIds(uiState.value.selectedIds)
                 setSelection(emptySet())
             }
-            HighlightTagRuleIntent.UploadSelection -> {
-                val state = uiState.value
-                uploadSelectedRules(state.selectedIds, state.items)
-            }
+            HighlightTagRuleIntent.UploadSelection -> Unit
             is HighlightTagRuleIntent.ExportSelection -> {
                 val state = uiState.value
                 exportToUri(intent.uri, state.items, state.selectedIds)

@@ -30,26 +30,10 @@ data class OtherConfigUiState(
     val processText: Boolean = true,
     val recordLog: Boolean = false,
     val recordHeapDump: Boolean = false,
-    val directUploadUrl: String = "",
-    val directDownloadUrlRule: String = "",
-    val directSummary: String = "",
-    val directCompress: Boolean = false,
-    val directRulePresets: ImmutableList<DirectLinkRuleUi> = persistentListOf(),
-    val directTestResult: String? = null,
     val isBatteryIgnored: Boolean = false,
     val activeOverlay: OtherConfigOverlay? = null,
     val pendingMessages: ImmutableList<OtherConfigMessage> = persistentListOf(),
 )
-
-@Stable
-data class DirectLinkRuleUi(
-    val uploadUrl: String,
-    val downloadUrlRule: String,
-    val summary: String,
-    val compress: Boolean,
-) {
-    override fun toString(): String = summary
-}
 
 @Stable
 data class OtherConfigMessage(
@@ -72,7 +56,6 @@ data class OtherConfigMessage(
 
 sealed interface OtherConfigOverlay {
     data object FilePicker : OtherConfigOverlay
-    data object DirectLinkUpload : OtherConfigOverlay
     data object ClearWebViewConfirmation : OtherConfigOverlay
     data object BatteryOptimizationGuide : OtherConfigOverlay
 }
@@ -102,19 +85,6 @@ sealed interface OtherConfigIntent {
     data class ProcessTextChanged(val value: Boolean) : OtherConfigIntent
     data class RecordLogChanged(val value: Boolean) : OtherConfigIntent
     data class RecordHeapDumpChanged(val value: Boolean) : OtherConfigIntent
-    data class DirectUploadUrlChanged(val value: String) : OtherConfigIntent
-    data class DirectDownloadUrlRuleChanged(val value: String) : OtherConfigIntent
-    data class DirectSummaryChanged(val value: String) : OtherConfigIntent
-    data class DirectCompressChanged(val value: Boolean) : OtherConfigIntent
-    data class DirectRuleChanged(
-        val uploadUrl: String,
-        val downloadUrlRule: String,
-        val summary: String,
-        val compress: Boolean,
-    ) : OtherConfigIntent
-    data object ConfirmDirectLinkRule : OtherConfigIntent
-    data object TestDirectLinkRule : OtherConfigIntent
-    data object DismissDirectTestResult : OtherConfigIntent
     data class ShowOverlay(val overlay: OtherConfigOverlay) : OtherConfigIntent
     data object DismissOverlay : OtherConfigIntent
     data object RequestSystemDirectory : OtherConfigIntent

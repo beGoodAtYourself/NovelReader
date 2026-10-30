@@ -6,7 +6,6 @@ import io.legado.app.R
 import io.legado.app.base.BaseRuleViewModel
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.repository.TxtTocRuleRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.list.InteractionState
 import io.legado.app.help.DefaultData
@@ -25,12 +24,10 @@ import kotlinx.coroutines.launch
 
 class TxtTocRuleViewModel(
     application: Application,
-    uploadRepository: UploadRepository,
     private val repository: TxtTocRuleRepository,
 ) : BaseRuleViewModel<TxtTocRuleItemUi, TxtTocRule, Long, TxtTocRuleUiState>(
     application,
     TxtTocRuleUiState(interaction = InteractionState(isLoading = true)),
-    uploadRepository
 ) {
     private val _effects = MutableSharedFlow<TxtTocRuleEffect>(extraBufferCapacity = 16)
     val effects = _effects.asSharedFlow()
@@ -58,10 +55,7 @@ class TxtTocRuleViewModel(
                 delSelectionByIds(uiState.value.selectedIds)
                 setSelection(emptySet())
             }
-            TxtTocRuleIntent.UploadSelection -> {
-                val state = uiState.value
-                uploadSelectedRules(state.selectedIds, state.items)
-            }
+            TxtTocRuleIntent.UploadSelection -> Unit
             is TxtTocRuleIntent.ExportSelection -> {
                 val state = uiState.value
                 exportToUri(intent.uri, state.items, state.selectedIds)

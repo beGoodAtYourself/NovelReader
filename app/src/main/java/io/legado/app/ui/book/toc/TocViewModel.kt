@@ -677,9 +677,9 @@ class TocViewModel(
             is TocIntent.ExportBookmarks -> exportCurrentBookBookmarks(intent.uri, intent.isMarkdown)
             is TocIntent.UpdateBookmark -> updateBookmark(intent.bookmark)
             is TocIntent.DeleteBookmark -> deleteBookmark(intent.bookmark)
-            is TocIntent.DownloadChapter -> downloadChapter(intent.id)
-            TocIntent.DownloadAll -> downloadAll()
-            TocIntent.DownloadSelected -> downloadSelected()
+            is TocIntent.DownloadChapter -> Unit
+            TocIntent.DownloadAll -> Unit
+            TocIntent.DownloadSelected -> Unit
             TocIntent.SelectAll -> selectAll()
             TocIntent.InvertSelection -> invertSelection()
             TocIntent.ClearSelection -> clearSelection()

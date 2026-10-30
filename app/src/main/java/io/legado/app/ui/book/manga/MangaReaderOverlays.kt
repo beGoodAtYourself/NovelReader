@@ -360,22 +360,10 @@ private fun MangaMenuMergedActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MergedMangaIconButton(
-            Icons.Filled.SwapHoriz,
-            tint,
-            stringResource(R.string.change_origin),
-        ) { onIntent(MangaReaderIntent.ChangeSource) }
-        MergedMangaDivider(tint)
-        MergedMangaIconButton(
             Icons.Filled.Refresh,
             tint,
             stringResource(R.string.refresh),
         ) { onIntent(MangaReaderIntent.RefreshChapter) }
-        MergedMangaDivider(tint)
-        MergedMangaIconButton(
-            Icons.Filled.MoreVert,
-            tint,
-            stringResource(R.string.more_actions),
-        ) { onIntent(MangaReaderIntent.OpenSourceActions) }
     }
 }
 

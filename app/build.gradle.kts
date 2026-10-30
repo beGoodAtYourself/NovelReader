@@ -8,11 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.room)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
     alias(libs.plugins.baselineprofile)
 }
 
-apply(from = "download.gradle")
 
 
 val versionPropsFile = file("version.properties")
@@ -57,15 +55,8 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = System.getenv("COMMIT_NUMBER")?.toInt()?.let { 10000 + it } ?: 32640
-        versionName = System.getenv("APP_VERSION_NAME") ?: projectVersionName
+        versionName = (System.getenv("APP_VERSION_NAME") ?: projectVersionName) + "-local"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "Cronet_Version", "\"${project.findProperty("CronetVersion")}\"")
-        buildConfigField(
-            "String",
-            "Cronet_Main_Version",
-            "\"${project.findProperty("CronetMainVersion")}\""
-        )
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -94,8 +85,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-                "cronet-proguard-rules.pro"
+                "proguard-rules.pro"
             )
         }
         create("noR8") {
@@ -115,8 +105,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-                "cronet-proguard-rules.pro"
+                "proguard-rules.pro"
             )
         }
     }
@@ -192,6 +181,7 @@ dependencies {
     implementation(libs.androidx.profileinstaller)
     "baselineProfile"(project(":baselineprofile"))
     coreLibraryDesugaring(libs.desugar)
+    testImplementation(kotlin("reflect"))
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -219,7 +209,6 @@ dependencies {
     implementation(libs.lifecycle.service)
     implementation(libs.media.media)
     implementation(libs.media3.exoplayer)
-    implementation(libs.media3.datasource.okhttp)
     implementation(libs.splitties.appctx)
     implementation(libs.splitties.systemservices)
     implementation(libs.splitties.views)
@@ -235,20 +224,11 @@ dependencies {
     implementation(project(":modules:book"))
     implementation(project(":modules:rhino"))
     implementation(libs.okhttp)
-    implementation(fileTree(mapOf("dir" to "cronetlib", "include" to listOf("*.jar", "*.aar"))))
-    implementation(libs.protobuf.javalite)
     implementation(libs.glide.glide)
-    implementation(libs.glide.okhttp)
     ksp(libs.glide.ksp)
     implementation(libs.androidsvg)
     implementation(libs.glide.svg)
     implementation(libs.glide.recyclerview)
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.cio)
-    implementation(libs.ktor.server.content.negotiation)
-    implementation(libs.ktor.serialization.gson)
-    implementation(libs.ktor.server.cors)
-    implementation(libs.ktor.server.websockets)
     implementation(libs.zxing.lite)
     implementation(libs.colorpicker)
     implementation(libs.colorpicker.compose)
@@ -262,9 +242,6 @@ dependencies {
     // 书源 JS 通过 Packages.cn.hutool.* 调用，保留在 classpath（应用代码不依赖，见 AGENTS.md）
     implementation(libs.hutool.crypto)
     //noinspection GradleDependency
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.perf)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.palette)
     implementation(libs.androidx.biometric)
@@ -288,9 +265,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
-    implementation(libs.coil.network.okhttp)
     implementation(libs.telephoto.zoomable.image.coil3)
-    implementation(libs.accompanist.webview)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.datetime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

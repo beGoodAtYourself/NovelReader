@@ -399,6 +399,10 @@ val Context.externalCache: File
     get() = this.externalCacheDir ?: this.cacheDir
 
 fun Context.openUrl(url: String) {
+    if (!io.legado.app.domain.model.LocalReadingPolicy.acceptsAddress(url)) {
+        toastOnUi(R.string.local_reader_only)
+        return
+    }
     try {
         startActivity(IntentHelp.getBrowserIntent(url))
     } catch (e: Exception) {
@@ -408,6 +412,10 @@ fun Context.openUrl(url: String) {
 }
 
 fun Context.openUrl(uri: Uri) {
+    if (!io.legado.app.domain.model.LocalReadingPolicy.acceptsAddress(uri.toString())) {
+        toastOnUi(R.string.local_reader_only)
+        return
+    }
     try {
         startActivity(IntentHelp.getBrowserIntent(uri))
     } catch (e: Exception) {

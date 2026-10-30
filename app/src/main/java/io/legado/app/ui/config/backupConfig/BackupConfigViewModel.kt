@@ -7,7 +7,6 @@ import io.legado.app.R
 import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.model.settings.BackupSettings
 import io.legado.app.domain.usecase.BackupRestoreUseCase
-import io.legado.app.domain.usecase.WebDavBackupUseCase
 import io.legado.app.utils.isContentScheme
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +20,6 @@ import kotlinx.coroutines.withContext
 
 class BackupConfigViewModel(
     private val settingsGateway: BackupSettingsGateway,
-    private val webDavBackupUseCase: WebDavBackupUseCase,
     private val backupRestoreUseCase: BackupRestoreUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
@@ -48,28 +46,10 @@ class BackupConfigViewModel(
 
     fun onIntent(intent: BackupConfigIntent) {
         when (intent) {
-            is BackupConfigIntent.SetWebDavUrl -> update { it.copy(webDavUrl = intent.value) }
-            is BackupConfigIntent.SetWebDavDir -> update { it.copy(webDavDir = intent.value) }
-            is BackupConfigIntent.SetWebDavDeviceName ->
-                update { it.copy(webDavDeviceName = intent.value) }
-            is BackupConfigIntent.SetSyncBookProgress -> setSyncBookProgress(intent.value)
-            is BackupConfigIntent.SetSyncBookProgressPlus ->
-                update { it.copy(syncBookProgressPlus = intent.value) }
-            is BackupConfigIntent.SetAutoCheckNewBackup ->
-                update { it.copy(autoCheckNewBackup = intent.value) }
             is BackupConfigIntent.SetOnlyLatestBackup ->
                 update { it.copy(onlyLatestBackup = intent.value) }
-            is BackupConfigIntent.SetBackupSyncMode ->
-                update { it.copy(backupSyncMode = intent.value) }
             is BackupConfigIntent.OpenSheet -> _uiState.update { it.copy(activeSheet = intent.sheet) }
             BackupConfigIntent.DismissSheet -> _uiState.update { it.copy(activeSheet = null) }
-            BackupConfigIntent.OpenWebDavAuth -> openWebDavAuth()
-            is BackupConfigIntent.EditWebDavAccount -> updateAuth { it.copy(account = intent.value) }
-            is BackupConfigIntent.EditWebDavPassword -> updateAuth { it.copy(password = intent.value) }
-            BackupConfigIntent.TogglePasswordVisibility ->
-                updateAuth { it.copy(passwordVisible = !it.passwordVisible) }
-            BackupConfigIntent.SaveWebDavAuth -> saveWebDavAuth()
-            BackupConfigIntent.TestWebDav -> testWebDav()
             BackupConfigIntent.OpenIgnoreDialog ->
                 _uiState.update { it.copy(activeSheet = BackupConfigSheet.IgnoreRestoreItems) }
             is BackupConfigIntent.ToggleIgnoreItem -> toggleIgnoreItem(intent.key, intent.value)
@@ -99,9 +79,6 @@ class BackupConfigViewModel(
             is BackupConfigIntent.PerformBackup -> performBackup(intent.path, intent.mode)
             BackupConfigIntent.RequestLocalRestore -> requestLocalRestore()
             is BackupConfigIntent.RestoreLocal -> restoreLocal(intent.uri)
-            BackupConfigIntent.RequestNetworkRestore -> loadNetworkBackups()
-            is BackupConfigIntent.RestoreNetwork -> restoreNetwork(intent.name)
-            BackupConfigIntent.ConfirmLocalRestoreFallback -> requestLocalRestore()
             BackupConfigIntent.RequestImportOldData ->
                 _effects.tryEmit(BackupConfigEffect.LaunchImportOldDataPicker)
         }
@@ -109,62 +86,6 @@ class BackupConfigViewModel(
 
     private fun update(transform: (BackupSettings) -> BackupSettings) {
         viewModelScope.launch { settingsGateway.update(transform) }
-    }
-
-    private fun setSyncBookProgress(value: Boolean) {
-        viewModelScope.launch {
-            settingsGateway.update {
-                it.copy(
-                    syncBookProgress = value,
-                    syncBookProgressPlus = it.syncBookProgressPlus && value,
-                )
-            }
-        }
-    }
-
-    private fun openWebDavAuth() {
-        val settings = _uiState.value.settings
-        _uiState.update {
-            it.copy(
-                activeDialog = BackupConfigDialog.WebDavAuth(
-                    account = settings.webDavAccount,
-                    password = settings.webDavPassword,
-                )
-            )
-        }
-    }
-
-    private fun updateAuth(transform: (BackupConfigDialog.WebDavAuth) -> BackupConfigDialog.WebDavAuth) {
-        _uiState.update { state ->
-            val dialog = state.activeDialog as? BackupConfigDialog.WebDavAuth ?: return@update state
-            state.copy(activeDialog = transform(dialog))
-        }
-    }
-
-    private fun saveWebDavAuth() {
-        val dialog = _uiState.value.activeDialog as? BackupConfigDialog.WebDavAuth ?: return
-        viewModelScope.launch {
-            settingsGateway.update {
-                it.copy(webDavAccount = dialog.account, webDavPassword = dialog.password)
-            }
-            // testWebDav() 内部会调 upConfig() 重建 authorization，故这里不需要额外触发。
-            testWebDav()
-        }
-    }
-
-    private fun testWebDav() {
-        _uiState.update { it.copy(activeDialog = BackupConfigDialog.Loading(R.string.test_sync_loading_text)) }
-        viewModelScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                runCatching { webDavBackupUseCase.test() }.getOrDefault(false)
-            }
-            _uiState.update { it.copy(activeDialog = null) }
-            _effects.tryEmit(
-                BackupConfigEffect.ShowMessage(
-                    if (success) R.string.test_sync_status_success else R.string.test_sync_status_fail
-                )
-            )
-        }
     }
 
     private fun toggleIgnoreItem(key: String, value: Boolean) {
@@ -256,14 +177,17 @@ class BackupConfigViewModel(
     private fun saveBackupPath(path: String, runBackup: Boolean) {
         viewModelScope.launch {
             settingsGateway.update { it.copy(backupPath = path) }
-            if (runBackup && path.isNotEmpty()) requestBackup("both", path)
+            if (runBackup && path.isNotEmpty()) requestBackup("local", path)
         }
     }
 
     private fun requestBackup(mode: String, selectedPath: String? = null) {
         _uiState.update { it.copy(activeSheet = null) }
         val path = selectedPath ?: _uiState.value.settings.backupPath.orEmpty()
-        if (path.isEmpty() && mode != "webdav") return
+        if (path.isEmpty()) {
+            launchDirectoryPicker(runBackup = true)
+            return
+        }
         if (path.isNotEmpty() && !path.isContentScheme()) {
             _effects.tryEmit(BackupConfigEffect.RequestStoragePermission(path, mode))
         } else {
@@ -274,7 +198,7 @@ class BackupConfigViewModel(
     private fun performBackup(path: String, mode: String) {
         _uiState.update { it.copy(activeDialog = BackupConfigDialog.Loading(R.string.backup)) }
         viewModelScope.launch(Dispatchers.IO) {
-            runCatching { backupRestoreUseCase.backup(path, mode) }
+            runCatching { backupRestoreUseCase.backup(path, "local") }
                 .onSuccess {
                     withContext(Dispatchers.Main) {
                         _uiState.update { it.copy(activeDialog = null) }
@@ -308,61 +232,17 @@ class BackupConfigViewModel(
         }
     }
 
-    private fun loadNetworkBackups() {
-        _uiState.update {
-            it.copy(activeSheet = null, activeDialog = BackupConfigDialog.Loading(R.string.loading))
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching { webDavBackupUseCase.getBackupNames() }
-                .onSuccess { names ->
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                activeDialog = null,
-                                activeSheet = BackupConfigSheet.RestoreFiles,
-                                backupNames = names.toImmutableList(),
-                            )
-                        }
-                    }
-                }
-                .onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                activeDialog = BackupConfigDialog.ConfirmLocalRestoreFallback(
-                                    error.localizedMessage
-                                )
-                            )
-                        }
-                    }
-                }
-        }
-    }
-
-    private fun restoreNetwork(name: String) {
-        _uiState.update {
-            it.copy(activeSheet = null, activeDialog = BackupConfigDialog.Loading(R.string.on_restore))
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching { webDavBackupUseCase.restore(name) }
-                .fold(
-                    onSuccess = { finishRestoreSuccess() },
-                    onFailure = { finishRestoreFailure(it.localizedMessage, webDav = true) },
-                )
-        }
-    }
-
     private suspend fun finishRestoreSuccess() = withContext(Dispatchers.Main) {
         _uiState.update { it.copy(activeDialog = null) }
         _effects.tryEmit(BackupConfigEffect.ShowMessage(R.string.restore_success))
     }
 
-    private suspend fun finishRestoreFailure(message: String?, webDav: Boolean = false) =
+    private suspend fun finishRestoreFailure(message: String?) =
         withContext(Dispatchers.Main) {
             _uiState.update { it.copy(activeDialog = null) }
             _effects.tryEmit(
                 BackupConfigEffect.ShowMessage(
-                    if (webDav) R.string.webdav_restore_fail else R.string.restore_fail_with_error,
+                    R.string.restore_fail_with_error,
                     message,
                 )
             )

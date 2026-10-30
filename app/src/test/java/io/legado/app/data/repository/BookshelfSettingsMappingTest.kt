@@ -28,7 +28,7 @@ class BookshelfSettingsMappingTest {
         bookshelfMappingSamples().forEach { expected ->
             assertEquals(expected.expectedPrefMap(), expected.toPrefMap())
             assertEquals(
-                expected,
+                expected.copy(bookshelfSearchActionDirectToSearch = false, autoRefreshBook = false),
                 expected.expectedPrefMap().toTestPreferences().toBookshelfSettings(),
             )
         }

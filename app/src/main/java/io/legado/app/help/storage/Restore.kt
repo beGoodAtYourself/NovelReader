@@ -41,7 +41,6 @@ import io.legado.app.domain.gateway.AppLocaleGateway
 import io.legado.app.domain.gateway.ReadStyleGateway
 import io.legado.app.data.repository.HttpTtsRepository
 import io.legado.app.data.entities.ReadAloudVoiceEntity
-import io.legado.app.help.DirectLinkUpload
 import io.legado.app.help.LauncherIconHelp
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.readaloud.speech.HttpTtsCatalogParser
@@ -315,11 +314,11 @@ object Restore : KoinComponent {
                 AppLog.put("恢复服务器配置出错\n${it.localizedMessage}", it)
             }
         }
-        File(path, DirectLinkUpload.ruleFileName).takeIf {
+        File(path, "directLinkUploadRule.json").takeIf {
             it.exists()
         }?.runCatching {
             val json = readText()
-            ACache.get(cacheDir = false).put(DirectLinkUpload.ruleFileName, json)
+            ACache.get(cacheDir = false).put("directLinkUploadRule.json", json)
         }?.onFailure {
             AppLog.put("恢复直链上传出错\n${it.localizedMessage}", it)
         }

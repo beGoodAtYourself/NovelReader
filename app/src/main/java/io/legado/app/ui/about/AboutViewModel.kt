@@ -10,7 +10,6 @@ import io.legado.app.constant.AppLog
 import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.gateway.OtherSettingsGateway
 import io.legado.app.help.CrashHandler
-import io.legado.app.help.update.AppUpdate
 import io.legado.app.utils.FileDoc
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.compress.ZipUtils
@@ -65,37 +64,15 @@ class AboutViewModel(
         when (intent) {
             is AboutIntent.DismissSheet -> _uiState.update { it.copy(sheet = AboutSheet.None) }
             is AboutIntent.DismissDialog -> _uiState.update { it.copy(dialog = null) }
-            is AboutIntent.CheckUpdate -> checkUpdate()
+            is AboutIntent.CheckUpdate -> Unit
             is AboutIntent.ShowMdFile -> showMdFile(intent.title, intent.fileName)
             is AboutIntent.ShowCrashLogs -> showCrashLogs()
             is AboutIntent.SaveLog -> saveLog()
             is AboutIntent.CreateHeapDump -> createHeapDump()
-            is AboutIntent.OpenUrl -> _effects.tryEmit(AboutEffect.OpenUrl(intent.url))
+            is AboutIntent.OpenUrl -> Unit
             is AboutIntent.ClearCrashLogs -> clearCrashLogs()
             is AboutIntent.ReadCrashFile -> readCrashFile(intent.fileDoc)
-            is AboutIntent.StartDownload -> startDownload()
-        }
-    }
-
-    private fun checkUpdate() {
-        _uiState.update { it.copy(dialog = AboutDialog.CheckingUpdate) }
-        AppUpdate.gitHubUpdate?.run {
-            check(viewModelScope)
-                .onSuccess { updateInfo ->
-                    _uiState.update {
-                        it.copy(
-                            dialog = null,
-                            sheet = AboutSheet.Update(updateInfo)
-                        )
-                    }
-                }.onError { e ->
-                    _uiState.update { it.copy(dialog = null) }
-                    _effects.tryEmit(
-                        AboutEffect.ShowToast("${context.getString(R.string.check_update)}\n${e.localizedMessage}")
-                    )
-                }.onFinally {
-                    _uiState.update { it.copy(dialog = null) }
-                }
+            is AboutIntent.StartDownload -> Unit
         }
     }
 
@@ -210,18 +187,6 @@ class AboutViewModel(
             }
         }.onError {
             AppLog.put("保存堆转储失败\n${it.localizedMessage}", it)
-        }
-    }
-
-    private fun startDownload() {
-        val sheet = _uiState.value.sheet
-        if (sheet is AboutSheet.Update) {
-            val info = sheet.updateInfo
-            if (info.downloadUrl.isBlank() || info.fileName.isBlank()) {
-                _effects.tryEmit(AboutEffect.ShowToast(context.getString(R.string.about_download_info_incomplete)))
-            } else {
-                _effects.tryEmit(AboutEffect.StartDownload(info.downloadUrl, info.fileName))
-            }
         }
     }
 

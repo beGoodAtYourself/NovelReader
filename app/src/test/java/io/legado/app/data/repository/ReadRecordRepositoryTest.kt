@@ -3,6 +3,7 @@ package io.legado.app.data.repository
 import android.app.Application
 import androidx.room.Room
 import androidx.room.withTransaction
+import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.readRecord.ReadRecord
@@ -45,9 +46,11 @@ class ReadRecordRepositoryTest {
     @Test
     fun `per book recording switch persists without changing progress or affecting another copy`() = runBlocking {
         repository.setReadRecordEnabled(true)
-        val first = Book(bookUrl = "https://first.example/book", name = targetName, author = author,
+        val first = Book(
+            type = BookType.text or BookType.local,
+            bookUrl = "file:///books/first.txt", name = targetName, author = author,
             durChapterIndex = 7, durChapterPos = 43)
-        val second = first.copy(bookUrl = "https://second.example/book")
+        val second = first.copy(bookUrl = "file:///books/second.txt")
         database.bookDao.insert(first, second)
         val books = BookRepository(database.bookDao, database.bookChapterDao, database)
         val disabled = books.setReadRecordDisabled(first.bookUrl, true)!!
@@ -233,9 +236,9 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `deleting one timeline session keeps other sessions for the same book`() = runBlocking {
-        val first = session(bookUrl = "https://book.example", start = 1_000, end = 11_000)
-        val second = session(bookUrl = "https://book.example", start = 1_311_000, end = 1_321_000)
-        val third = session(bookUrl = "https://book.example", start = 2_621_000, end = 2_631_000)
+        val first = session(bookUrl = "file:///book.example", start = 1_000, end = 11_000)
+        val second = session(bookUrl = "file:///book.example", start = 1_311_000, end = 1_321_000)
+        val third = session(bookUrl = "file:///book.example", start = 2_621_000, end = 2_631_000)
         repository.saveReadSession(first)
         repository.saveReadSession(second)
         repository.saveReadSession(third)
@@ -249,9 +252,9 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `deleting a merged timeline item removes only its continuous session group`() = runBlocking {
-        val first = session(bookUrl = "https://book.example", start = 1_000, end = 11_000)
-        val second = session(bookUrl = "https://book.example", start = 21_000, end = 31_000)
-        val separate = session(bookUrl = "https://book.example", start = 1_431_000, end = 1_441_000)
+        val first = session(bookUrl = "file:///book.example", start = 1_000, end = 11_000)
+        val second = session(bookUrl = "file:///book.example", start = 21_000, end = 31_000)
+        val separate = session(bookUrl = "file:///book.example", start = 1_431_000, end = 1_441_000)
         repository.saveReadSession(first)
         repository.saveReadSession(second)
         repository.saveReadSession(separate)
@@ -271,7 +274,7 @@ class ReadRecordRepositoryTest {
     fun `cross midnight session splits daily read time without splitting the session`() = runBlocking {
         val zone = ZoneId.systemDefault()
         val midnight = ZonedDateTime.of(2026, 9, 23, 0, 0, 0, 0, zone).toInstant().toEpochMilli()
-        val record = session(bookUrl = "https://book.example", start = midnight - 120_000, end = midnight + 480_000)
+        val record = session(bookUrl = "file:///book.example", start = midnight - 120_000, end = midnight + 480_000)
 
         repository.saveReadSession(record)
 
@@ -288,7 +291,7 @@ class ReadRecordRepositoryTest {
     fun `deleting cross midnight session clears both daily details`() = runBlocking {
         val zone = ZoneId.systemDefault()
         val midnight = ZonedDateTime.of(2026, 9, 24, 0, 0, 0, 0, zone).toInstant().toEpochMilli()
-        val record = session(bookUrl = "https://book.example", start = midnight - 120_000, end = midnight + 480_000)
+        val record = session(bookUrl = "file:///book.example", start = midnight - 120_000, end = midnight + 480_000)
         repository.saveReadSession(record)
 
         assertEquals(true, repository.deleteSession(database.readRecordDao.allSession.single()))
@@ -300,8 +303,8 @@ class ReadRecordRepositoryTest {
     @Test
     fun `coexisting copies are timed independently while the work total is their sum`() =
         runBlocking {
-            val copyA = "https://a.example/book"
-            val copyB = "https://b.example/book"
+            val copyA = "file:///a.example/book"
+            val copyB = "file:///b.example/book"
             repository.saveReadSession(session(bookUrl = copyA, start = 1_000, end = 1_200))
             repository.saveReadSession(session(bookUrl = copyB, start = 2_000, end = 2_300))
 
@@ -313,7 +316,7 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `copy without owned session falls back to unowned legacy sessions`() = runBlocking {
-        val copyA = "https://a.example/book"
+        val copyA = "file:///a.example/book"
         database.readRecordDao.insertSession(session(bookUrl = "", start = 1_000, end = 1_200))
 
         assertEquals(200L, repository.getBookCopyReadTime(copyA, targetName, author).first())
@@ -321,17 +324,17 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `unowned legacy sessions leave both copies once a second copy exists`() = runBlocking {
-        val copyA = "https://a.example/book"
-        val copyB = "https://b.example/book"
+        val copyA = "file:///a.example/book"
+        val copyB = "file:///b.example/book"
         // 走 saveReadSession，让汇总记录（作品维度）与会话一起建立
         repository.saveReadSession(session(bookUrl = "", start = 1_000, end = 1_200))
-        database.bookDao.insert(Book(bookUrl = copyA, name = targetName, author = author))
+        database.bookDao.insert(Book(type = BookType.text or BookType.local, bookUrl = copyA, name = targetName, author = author))
 
         // 作品只有一个副本时，未归属的历史时长算在它头上，避免升级后凭空消失
         assertEquals(200L, repository.getBookCopyReadTime(copyA, targetName, author).first())
 
         // 共存出第二个副本后，谁都不再显示，避免同一段历史在两个副本里各出现一次
-        database.bookDao.insert(Book(bookUrl = copyB, name = targetName, author = author))
+        database.bookDao.insert(Book(type = BookType.text or BookType.local, bookUrl = copyB, name = targetName, author = author))
         assertEquals(0L, repository.getBookCopyReadTime(copyA, targetName, author).first())
         assertEquals(0L, repository.getBookCopyReadTime(copyB, targetName, author).first())
         // 作品维度始终保留这段历史
@@ -340,8 +343,8 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `migrating a copy moves its sessions without doubling the total`() = runBlocking {
-        val oldBook = Book(bookUrl = "https://old.example/book", name = targetName, author = author)
-        val newBook = Book(bookUrl = "https://new.example/book", name = targetName, author = author)
+        val oldBook = Book(type = BookType.text or BookType.local, bookUrl = "file:///old.example/book", name = targetName, author = author)
+        val newBook = Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = targetName, author = author)
         database.readRecordDao.insertSession(
             session(
                 bookUrl = oldBook.bookUrl,
@@ -369,8 +372,8 @@ class ReadRecordRepositoryTest {
 
     @Test
     fun `migrating to a renamed book moves the total instead of keeping an orphan`() = runBlocking {
-        val oldBook = Book(bookUrl = "https://old.example/book", name = targetName, author = author)
-        val newBook = Book(bookUrl = "https://new.example/book", name = sourceName, author = author)
+        val oldBook = Book(type = BookType.text or BookType.local, bookUrl = "file:///old.example/book", name = targetName, author = author)
+        val newBook = Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = sourceName, author = author)
         val date = "1970-01-01"
         database.readRecordDao.insertSession(
             session(

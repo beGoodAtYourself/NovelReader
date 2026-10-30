@@ -55,11 +55,13 @@ internal class MainEntryNavigation(
     private val navigate: (NavKey) -> Unit,
 ) {
     fun onNavigateToRoute(destination: NavKey) {
+        if (!isLocalReaderRoute(destination)) return
         if (!navigateInPanes(destination)) navigate(destination)
     }
 
     /** 保留已有直接压栈入口在窄窗口中的行为。 */
     fun pushRoute(destination: NavKey) {
+        if (!isLocalReaderRoute(destination)) return
         if (!navigateInPanes(destination)) {
             backStack.add(destination)
             tracker.onBackStackChanged(backStack)

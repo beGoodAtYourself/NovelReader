@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_reader_search_empty">No matching local books found</string>
+    <string name="local_reader_only">This version supports local reading only</string>
+    <string name="local_reader_about">Local reader: import books from your device, read offline, and create local backups.</string>
+    <string name="local_reader_system_voice">Offline system narration</string>
+    <string name="local_reader_offline_voice_summary">Use only offline voices installed on this device</string>
+    <string name="local_reader_no_offline_voice">No offline voice found. Install one in system text-to-speech settings first.</string>
+</resources>

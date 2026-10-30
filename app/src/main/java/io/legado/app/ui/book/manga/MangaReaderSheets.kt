@@ -78,50 +78,13 @@ internal fun MangaReaderSourceActionsSheet(
             )
         }
         Spacer(Modifier.height(16.dp))
-        val actions = buildList {
-            if (state.sourceCustomButtonAvailable) add(
-                MangaMoreAction(
-                    stringResource(R.string.custom_button),
-                    Icons.Default.Extension,
-                    MangaReaderIntent.SourceCustomButton(false),
-                    MangaReaderIntent.SourceCustomButton(true),
-                )
-            )
-            addAll(
-                listOf(
-                    MangaMoreAction(
-                        stringResource(R.string.change_origin),
-                        Icons.Default.SwapHoriz,
-                        MangaReaderIntent.ChangeSource
-                    ),
-                    MangaMoreAction(
-                        stringResource(R.string.refresh),
-                        Icons.Default.Refresh,
-                        MangaReaderIntent.RefreshChapter
-                    ),
-                    MangaMoreAction(
-                        stringResource(R.string.login),
-                        Icons.AutoMirrored.Filled.Login,
-                        MangaReaderIntent.OpenSourceLogin
-                    ),
-                    MangaMoreAction(
-                        stringResource(R.string.manga_reader_buy_chapter),
-                        Icons.Default.ShoppingCart,
-                        MangaReaderIntent.RequestPayCurrentChapter
-                    ),
-                    MangaMoreAction(
-                        stringResource(R.string.edit_source),
-                        Icons.Default.Edit,
-                        MangaReaderIntent.OpenSourceEdit
-                    ),
-                    MangaMoreAction(
-                        stringResource(R.string.disable_source),
-                        Icons.Default.MoreVert,
-                        MangaReaderIntent.DisableCurrentSource
-                    ),
-                )
-            )
-        }
+        val actions = listOf(
+            MangaMoreAction(
+                stringResource(R.string.refresh),
+                Icons.Default.Refresh,
+                MangaReaderIntent.RefreshChapter,
+            ),
+        )
         Column(Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)) {

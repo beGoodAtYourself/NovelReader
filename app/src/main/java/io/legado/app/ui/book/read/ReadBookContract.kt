@@ -521,9 +521,6 @@ data class ReadBookButtonConfigItem(
 
 /** 共享图标池：顶栏、浮动图标、底栏共用的那批通用按钮。完整池见 `ReadMenuActionIds`。 */
 internal val ReadBookButtonIds = listOf(
-    "ai_chat",
-    "ai_summary",
-    "ai_rewrite",
     "more_actions",
     "search",
     "auto_page",
@@ -537,22 +534,26 @@ internal val ReadBookButtonIds = listOf(
     "next_chapter",
     "replace",
     "replace_badge",
-    "translate",
     "refresh_current",
-    "multi_role_read",
-    "multi_role_cast",
-    "cast_table",
-    "ai_cast",
 )
 
 internal val MoreActionIds = listOf(
-    "source_custom_button", "source_login", "source_pay", "edit_source", "disable_source",
-    "change_source", "refresh", "download", "audio_download",
-    "ai_chat", "edit_content", "add_bookmark",
-    "text_processing", "reverse_content", "re_segment",
-    "del_ruby", "del_h", "toc_rule", "charset", "image_style", "page_anim",
-    "simulated_reading", "get_progress", "cover_progress", "highlight_rule", "read_style",
-    "bottom_button_config", "log",
+    "edit_content",
+    "add_bookmark",
+    "text_processing",
+    "reverse_content",
+    "re_segment",
+    "del_ruby",
+    "del_h",
+    "toc_rule",
+    "charset",
+    "image_style",
+    "page_anim",
+    "simulated_reading",
+    "highlight_rule",
+    "read_style",
+    "bottom_button_config",
+    "log",
 )
 
 @Immutable

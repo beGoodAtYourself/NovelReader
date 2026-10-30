@@ -42,7 +42,7 @@ class ThemeSettingsMappingTest {
         themeMappingSamples().forEach { expected ->
             assertEquals(expected.expectedGatewayPrefMap(), expected.toGatewayPrefMap())
             assertEquals(
-                expected,
+                expected.copy(bookInfoAuthorSearchFallback = false),
                 expected.expectedGatewayPrefMap().toTestPreferences().toThemeSettings(),
             )
         }

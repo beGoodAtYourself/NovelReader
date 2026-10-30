@@ -9,19 +9,16 @@ import io.legado.app.constant.IntentAction
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.domain.model.PlaybackTimer
-import io.legado.app.domain.model.readaloud.ReadAloudEngineSelection
 import io.legado.app.domain.model.readaloud.ReadAloudVoice
 import io.legado.app.help.readaloud.effect.VoiceEffectStore
 import io.legado.app.help.readaloud.playback.ReadAloudAudioStore
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.model.ReadAloud.getReadAloudClass
 import io.legado.app.service.BaseReadAloudService
-import io.legado.app.service.HttpReadAloudService
 import io.legado.app.service.TTSReadAloudService
 import io.legado.app.service.readaloud.ReadAloudBookSession
 import io.legado.app.utils.GSON
 import io.legado.app.utils.LogUtils
-import io.legado.app.utils.StringUtils
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.startForegroundServiceCompat
@@ -64,40 +61,9 @@ object ReadAloud {
     val supportsSessionAudioEffect: Boolean
         get() = (if (BaseReadAloudService.isRun) aloudClass else getReadAloudClass()) != TTSReadAloudService::class.java
 
-    private fun getReadAloudClass(): Class<*> {        val ttsEngine = ttsEngine
-        GSON.fromJsonObject<ReadAloudEngineSelection>(ttsEngine).getOrNull()
-            ?.takeIf { it.engineType == ReadAloudVoice.ENGINE_CLOUD }
-            ?.let { selection ->
-                coordinatorDefaultEngineType = selection.engineType
-                coordinatorDefaultEngineId = selection.engineId
-                coordinatorDefaultSpeakerId = selection.speakerId
-                httpTTS = HttpTTS(
-                    id = Long.MIN_VALUE,
-                    name = selection.displayName.ifBlank { "Cloud TTS" })
-                return HttpReadAloudService::class.java
-            }
-        if (ttsEngine.isNullOrBlank()) {
-            setSystemCoordinatorDefault(ttsEngine)
-            findCoordinatorHttpSeed()?.let {
-                httpTTS = it
-                return HttpReadAloudService::class.java
-            }
-            return TTSReadAloudService::class.java
-        }
-        if (StringUtils.isNumeric(ttsEngine)) {
-            httpTTS = appDb.httpTTSDao.get(ttsEngine.toLong())
-            if (httpTTS != null) {
-                coordinatorDefaultEngineType = ReadAloudVoice.ENGINE_HTTP
-                coordinatorDefaultEngineId = ttsEngine
-                coordinatorDefaultSpeakerId = ""
-                return HttpReadAloudService::class.java
-            }
-        }
-        setSystemCoordinatorDefault(ttsEngine)
-        findCoordinatorHttpSeed()?.let {
-            httpTTS = it
-            return HttpReadAloudService::class.java
-        }
+    private fun getReadAloudClass(): Class<*> {
+        httpTTS = null
+        setSystemCoordinatorDefault(null)
         return TTSReadAloudService::class.java
     }
 
@@ -359,50 +325,6 @@ object ReadAloud {
 
     fun previousChapter(context: Context) = selectChapter(context, bookSession.chapterIndex - 1)
     fun nextChapter(context: Context) = selectChapter(context, bookSession.chapterIndex + 1)
-
-    /**
-     * 听书音频下载：只走文件合成那条服务，因为只有它能把每句落成文件。
-     *
-     * 下载和朗读共用同一个服务实例时才不冲突；正在用系统直读朗读时另起一个
-     * HttpReadAloudService 会和服务通知号撞车，所以那种情况直接拒绝，不做绕行。
-     */
-    fun downloadAudio(context: Context, bookUrl: String, startChapter: Int, endChapter: Int) {
-        if (BaseReadAloudService.isRun && aloudClass != HttpReadAloudService::class.java) {
-            context.toastOnUi("正在用系统直读朗读，请先停止朗读再下载音频")
-            return
-        }
-        val intent = Intent(context, HttpReadAloudService::class.java)
-        intent.action = IntentAction.downloadReadAloudAudio
-        intent.putExtra("bookUrl", bookUrl)
-        intent.putExtra("startChapter", startChapter)
-        intent.putExtra("endChapter", endChapter)
-        startServiceIntent(context, intent, "启动听书下载")
-    }
-
-    /**
-     * 下载前解析当前设置对应的合成源。
-     *
-     * [httpTTS] 只是 [getReadAloudClass] 的副产物：进程刚起、还没进过朗读时它是 null，
-     * 直接读会把「第一次就点下载」判成没有可用引擎，于是下载既不开始、也不收尾。
-     * 解析里带数据库查询，必须在后台线程调用。
-     */
-    fun resolveHttpTts(): HttpTTS? {
-        httpTTS?.let { return it }
-        getReadAloudClass()
-        return httpTTS
-    }
-
-    fun cancelDownloadAudio(context: Context) {
-        // 服务已经不在（被杀、任务被划掉、下载协程随服务销毁）时意图发不出去，
-        // 但界面上的「下载中」必须收尾，否则按钮永远禁用、取消也没反应。
-        if (!BaseReadAloudService.isRun) {
-            ReadAloudAudioStore.finishProgress()
-            return
-        }
-        val intent = Intent(context, HttpReadAloudService::class.java)
-        intent.action = IntentAction.cancelDownloadReadAloudAudio
-        startServiceIntent(context, intent, "取消听书下载")
-    }
 
     private fun startServiceIntent(context: Context, intent: Intent, label: String) {
         try {

@@ -4,12 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
-import io.legado.app.constant.AppConst
-import io.legado.app.data.repository.UploadRepository
-import io.legado.app.help.http.decompressed
-import io.legado.app.help.http.newCallResponseBody
-import io.legado.app.help.http.okHttpClient
-import io.legado.app.help.http.text
+import io.legado.app.R
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.importComponents.ImportItemWrapper
 import io.legado.app.ui.widget.components.importComponents.ImportStatus
@@ -45,7 +40,6 @@ sealed interface BaseRuleEvent {
 abstract class BaseRuleViewModel<T : SelectableItem<ID>, Entity, ID, S : ListUiState<T>>(
     application: Application,
     protected val initialState: S,
-    private val uploadRepository: UploadRepository? = null // 设为可空，提高灵活性
 ) : BaseViewModel(application) {
 
     protected val _searchKey = MutableStateFlow("")
@@ -191,45 +185,6 @@ abstract class BaseRuleViewModel<T : SelectableItem<ID>, Entity, ID, S : ListUiS
 
     abstract fun ruleItemToEntity(item: T): Entity
 
-    fun uploadSelectedRules(selectedIds: Set<ID>, rules: List<T>) {
-        val repo = uploadRepository ?: return
-        viewModelScope.launch {
-            if (selectedIds.isEmpty()) return@launch
-
-            _isUploading.value = true
-            try {
-                val json = withContext(Dispatchers.Default) {
-                    val rulesToExport = rules
-                        .filter { selectedIds.contains(it.id) }
-                        .map { ruleItemToEntity(it) }
-                    generateJson(rulesToExport)
-                }
-
-                val url = repo.upload(
-                    fileName = "export_rules.json",
-                    file = json,
-                    contentType = "application/json"
-                )
-
-                _eventChannel.send(
-                    BaseRuleEvent.ShowSnackbar(
-                        message = "上传成功: $url",
-                        actionLabel = "复制链接",
-                        url = url
-                    )
-                )
-            } catch (e: Exception) {
-                _eventChannel.send(
-                    BaseRuleEvent.ShowSnackbar(
-                        message = "上传失败: ${e.localizedMessage}"
-                    )
-                )
-            } finally {
-                _isUploading.value = false
-            }
-        }
-    }
-
     fun importSource(text: String) {
         _importState.value = BaseImportUiState.Loading
 
@@ -267,18 +222,14 @@ abstract class BaseRuleViewModel<T : SelectableItem<ID>, Entity, ID, S : ListUiS
 
     protected suspend fun resolveSource(text: String): String {
         return when {
-            text.isAbsUrl() -> {
-                okHttpClient.newCallResponseBody {
-                    if (text.endsWith("#requestWithoutUA")) {
-                        url(text.substringBeforeLast("#requestWithoutUA"))
-                        header(AppConst.UA_NAME, "null")
-                    } else {
-                        url(text)
-                    }
-                }.decompressed().text("utf-8")
-            }
+            text.isAbsUrl() -> throw IllegalArgumentException(context.getString(R.string.local_reader_only))
 
-            text.isUri() -> text.toUri().readText(context)
+            text.isUri() -> {
+                require(io.legado.app.domain.model.LocalReadingPolicy.acceptsAddress(text)) {
+                    context.getString(R.string.local_reader_only)
+                }
+                text.toUri().readText(context)
+            }
             else -> text
         }
     }

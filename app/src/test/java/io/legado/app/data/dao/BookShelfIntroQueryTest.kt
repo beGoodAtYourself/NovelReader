@@ -1,6 +1,7 @@
 package io.legado.app.data.dao
 
 import androidx.room.Room
+import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.SearchBook
@@ -46,12 +47,13 @@ class BookShelfIntroQueryTest {
     }
 
     private fun newBook() = SearchBook(
-        bookUrl = "http://example.com/book/1",
-        origin = "http://example.com",
+        bookUrl = "file:///example.com/book/1",
+        origin = "file:///example.com",
         name = "某某传",
         author = "张三",
         intro = listIntro
     ).toBook().apply {
+        type = type or BookType.local
         //详情规则随后覆盖 intro, 模拟聚合书源把服务状态写进详情简介
         intro = detailIntro
     }
@@ -81,7 +83,7 @@ class BookShelfIntroQueryTest {
     fun listIntroSurvivesRoundTrip() {
         db.bookDao.insert(newBook())
 
-        val saved: Book = db.bookDao.getBook("http://example.com/book/1")!!
+        val saved: Book = db.bookDao.getBook("file:///example.com/book/1")!!
         assertEquals(listIntro, saved.listIntro)
         assertEquals(detailIntro, saved.intro)
     }

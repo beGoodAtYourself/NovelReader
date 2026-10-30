@@ -59,17 +59,15 @@ import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.outlined.ViewCarousel
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -132,12 +130,12 @@ import io.legado.app.ui.widget.components.button.series.ToggleStyle
 import io.legado.app.ui.widget.components.card.NormalCard
 import io.legado.app.ui.widget.components.card.TextCard
 import io.legado.app.ui.widget.components.checkBox.AppCheckbox
+import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
 import io.legado.app.ui.widget.components.divider.PillHeaderDivider
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.image.cover.bookshelfSharedCoverSourceId
-import io.legado.app.ui.widget.components.importComponents.SourceInputDialog
 import io.legado.app.ui.widget.components.lazylist.FastScrollLazyVerticalGrid
 import io.legado.app.ui.widget.components.list.TopFloatingStickyItem
 import io.legado.app.ui.widget.components.log.AppLogSheet
@@ -157,6 +155,7 @@ import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -175,7 +174,7 @@ fun BookshelfRouteScreen(
     scrollToTopRequest: Long = 0L,
     onScrollToTopRequestHandled: (Long) -> Unit = {},
     onBookClick: (BookShelfItem, String?) -> Unit,
-    onBookLongClick: (book: BookShelfItem, sharedCoverKey: String?) -> Unit,
+    onBookInfo: (book: BookShelfItem, sharedCoverKey: String?) -> Unit,
     onNavigateToSearch: (String) -> Unit,
     onNavigateToRemoteImport: () -> Unit,
     onNavigateToLocalImport: () -> Unit,
@@ -209,7 +208,7 @@ fun BookshelfRouteScreen(
         scrollToTopRequest = scrollToTopRequest,
         onScrollToTopRequestHandled = onScrollToTopRequestHandled,
         onBookClick = onBookClick,
-        onBookLongClick = onBookLongClick,
+        onBookInfo = onBookInfo,
         onNavigateToSearch = onNavigateToSearch,
         onNavigateToRemoteImport = onNavigateToRemoteImport,
         onNavigateToLocalImport = onNavigateToLocalImport,
@@ -234,7 +233,7 @@ fun BookshelfScreen(
     scrollToTopRequest: Long = 0L,
     onScrollToTopRequestHandled: (Long) -> Unit = {},
     onBookClick: (BookShelfItem, String?) -> Unit,
-    onBookLongClick: (book: BookShelfItem, sharedCoverKey: String?) -> Unit,
+    onBookInfo: (book: BookShelfItem, sharedCoverKey: String?) -> Unit,
     onNavigateToSearch: (String) -> Unit,
     onNavigateToRemoteImport: () -> Unit,
     onNavigateToLocalImport: () -> Unit,
@@ -390,6 +389,9 @@ fun BookshelfScreen(
     val showGroupMenu = activeOverlay == BookshelfOverlay.GroupMenu
     val isEditMode = uiState.isEditMode
     val selectedBookUrls = uiState.selectedBookUrls
+    val showBookActions: (BookShelfItem, String?) -> Unit = { book, sharedCoverKey ->
+        onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.BookActions(book.bookUrl, sharedCoverKey)))
+    }
     val isInFolderRoot = uiState.isInFolderRoot
     val bookGroupStyle = uiState.bookGroupStyle
 
@@ -566,20 +568,8 @@ fun BookshelfScreen(
             onIntent = onIntent,
         )
     }
-    val onSearchClick = {
-        if (uiState.settings.bookshelfSearchActionDirectToSearch) {
-            onNavigateToSearch(uiState.searchKey.trim())
-        } else {
-            toggleShelfFilter()
-        }
-    }
-    val onSearchLongClick = {
-        if (uiState.settings.bookshelfSearchActionDirectToSearch) {
-            toggleShelfFilter()
-        } else {
-            onNavigateToSearch(uiState.searchKey.trim())
-        }
-    }
+    val onSearchClick = toggleShelfFilter
+    val onSearchLongClick = toggleShelfFilter
 
     AppScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -599,11 +589,7 @@ fun BookshelfScreen(
                 onSearchClick = onSearchClick,
                 onSearchLongClick = onSearchLongClick,
                 onSearchQueryChange = { onIntent(BookshelfIntent.SetSearchKey(it)) },
-                onSearchSubmit = { rawQuery ->
-                    rawQuery.trim()
-                        .takeIf { it.isNotEmpty() }
-                        ?.let(onNavigateToSearch)
-                },
+                onSearchSubmit = { query -> onIntent(BookshelfIntent.SetSearchKey(query.trim())) },
                 onClearSearch = { onIntent(BookshelfIntent.SetSearchKey("")) },
                 onExitEditMode = exitEditMode,
                 actions = {
@@ -619,17 +605,6 @@ fun BookshelfScreen(
                             onClick = { onIntent(BookshelfIntent.InvertVisibleSelection) },
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(R.string.revert_selection)
-                        )
-                    }
-                    AnimatedVisibility(visible = isEditMode) {
-                        TopBarActionButton(
-                            onClick = {
-                                if (selectedBookUrls.isNotEmpty()) {
-                                    onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.BatchDownloadConfirmDialog))
-                                }
-                            },
-                            imageVector = Icons.Default.Download,
-                            contentDescription = stringResource(R.string.action_download)
                         )
                     }
                     AnimatedVisibility(visible = isEditMode) {
@@ -672,7 +647,7 @@ fun BookshelfScreen(
                         TopBarActionButton(
                             onClick = {
                                 if (selectedBookUrls.isNotEmpty()) {
-                                    onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.DeleteBooksConfirmDialog))
+                                    onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.DeleteBooksConfirmDialog(selectedBookUrls)))
                                 }
                             },
                             imageVector = Icons.Default.Delete,
@@ -692,22 +667,9 @@ fun BookshelfScreen(
                                 onDismissRequest = { showTopBarMenu = false }
                             ) { dismiss ->
                                 RoundDropdownMenuItem(
-                                    text = stringResource(R.string.add_remote_book),
-                                    onClick = { onNavigateToRemoteImport(); dismiss() },
-                                    leadingIcon = { AppIcon(Icons.Default.Wifi, null) }
-                                )
-                                RoundDropdownMenuItem(
                                     text = stringResource(R.string.book_local),
                                     onClick = { onNavigateToLocalImport(); dismiss() },
                                     leadingIcon = { AppIcon(Icons.Default.Save, null) }
-                                )
-                                RoundDropdownMenuItem(
-                                    text = stringResource(R.string.update_toc),
-                                    onClick = {
-                                        onIntent(BookshelfIntent.RefreshToc(uiState.items))
-                                        dismiss()
-                                    },
-                                    leadingIcon = { AppIcon(Icons.Default.Refresh, null) }
                                 )
                                 RoundDropdownMenuItem(
                                     text = stringResource(R.string.layout_setting),
@@ -726,31 +688,12 @@ fun BookshelfScreen(
                                     leadingIcon = { AppIcon(Icons.Outlined.ViewCarousel, null) }
                                 )
                                 RoundDropdownMenuItem(
-                                    text = stringResource(R.string.add_url),
-                                    onClick = {
-                                        onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.AddUrlDialog))
-                                        dismiss()
-                                    },
-                                    leadingIcon = { AppIcon(Icons.Default.Link, null) }
-                                )
-                                RoundDropdownMenuItem(
                                     text = stringResource(R.string.selection_mode),
                                     onClick = {
                                         toggleEditMode()
                                         dismiss()
                                     },
                                     leadingIcon = { AppIcon(Icons.Default.Edit, null) }
-                                )
-                                RoundDropdownMenuItem(
-                                    text = stringResource(R.string.bookshelf_management),
-                                    onClick = {
-                                        val groupId =
-                                            uiState.groups.getOrNull(uiState.selectedGroupIndex)?.groupId
-                                                ?: -1L
-                                        onNavigateToCache(groupId)
-                                        dismiss()
-                                    },
-                                    leadingIcon = { AppIcon(Icons.Default.Bookmarks, null) }
                                 )
                                 RoundDropdownMenuItem(
                                     text = stringResource(R.string.export_bookshelf),
@@ -927,7 +870,7 @@ fun BookshelfScreen(
         } else {
             uiState.groups.getOrNull(pagerState.settledPage)
         }
-        val pullToRefreshEnabled = (currentGroup?.enableRefresh ?: true) && !isEditMode
+        val pullToRefreshEnabled = false
 
         Box(Modifier.fillMaxSize()) {
             AppPullToRefresh(
@@ -1086,7 +1029,7 @@ fun BookshelfScreen(
                                 onDragFinished = {},
                                 onGlobalSearch = { onNavigateToSearch(uiState.searchKey.trim()) },
                                 onBookClick = openBook,
-                                onBookLongClick = onBookLongClick,
+                                onBookLongClick = showBookActions,
                                 onLockedBookClick = requestBookUnlock,
                                 isCurrentPage = true,
                                 sharedCoverGroupId = currentGroupId,
@@ -1172,7 +1115,7 @@ fun BookshelfScreen(
                                             },
                                             onGlobalSearch = { onNavigateToSearch(uiState.searchKey.trim()) },
                                             onBookClick = openBook,
-                                            onBookLongClick = onBookLongClick,
+                                            onBookLongClick = showBookActions,
                                             onLockedBookClick = requestBookUnlock,
                                             isCurrentPage = isSelectedGroup,
                                             sharedCoverGroupId = group.groupId,
@@ -1308,7 +1251,8 @@ fun BookshelfScreen(
         selectedBookUrls = selectedBookUrls,
         importLauncher = importLauncher,
         exportLauncher = exportLauncher,
-        clearSelection = clearSelection
+        clearSelection = clearSelection,
+        onBookInfo = onBookInfo,
     )
 }
 
@@ -1340,7 +1284,7 @@ private fun BookshelfTopBar(
 ) {
     val searchContentDescription = stringResource(R.string.search)
     val filterContentDescription = stringResource(R.string.bookshelf_filter)
-    val searchFirst = uiState.settings.bookshelfSearchActionDirectToSearch
+    val searchFirst = false
     val exitEditModeDescription = stringResource(R.string.cancel_select)
     GlassMediumFlexibleTopAppBar(
         modifier = Modifier.fillMaxWidth(),
@@ -1408,7 +1352,8 @@ private fun BookshelfOverlays(
     selectedBookUrls: Set<String>,
     importLauncher: ManagedActivityResultLauncher<Array<String>, Uri?>,
     exportLauncher: ManagedActivityResultLauncher<String, Uri?>,
-    clearSelection: () -> Unit
+    clearSelection: () -> Unit,
+    onBookInfo: (BookShelfItem, String?) -> Unit,
 ) {
     BookshelfConfigSheet(
         show = activeOverlay == BookshelfOverlay.ConfigSheet,
@@ -1480,16 +1425,6 @@ private fun BookshelfOverlays(
         }
     )
 
-    SourceInputDialog(
-        show = activeOverlay == BookshelfOverlay.AddUrlDialog,
-        title = stringResource(R.string.add_book_url),
-        onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
-        onConfirm = { url ->
-            onIntent(BookshelfIntent.AddBookByUrl(url))
-            onIntent(BookshelfIntent.DismissOverlay)
-        }
-    )
-
     FilePickerSheet(
         show = activeOverlay == BookshelfOverlay.ImportSheet,
         onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
@@ -1497,9 +1432,6 @@ private fun BookshelfOverlays(
         onSelectSysFile = { types ->
             importLauncher.launch(types)
             onIntent(BookshelfIntent.DismissOverlay)
-        },
-        onManualInput = {
-            onIntent(BookshelfIntent.ShowOverlay(BookshelfOverlay.AddUrlDialog))
         },
         allowExtensions = arrayOf("json", "txt")
     )
@@ -1512,10 +1444,6 @@ private fun BookshelfOverlays(
             onIntent(BookshelfIntent.DismissOverlay)
             exportLauncher.launch("bookshelf.json")
         },
-        onUpload = {
-            onIntent(BookshelfIntent.DismissOverlay)
-            onIntent(BookshelfIntent.UploadBookshelf(uiState.items))
-        }
     )
 
     AppLogSheet(
@@ -1523,54 +1451,7 @@ private fun BookshelfOverlays(
         onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) }
     )
 
-    AppAlertDialog(
-        show = activeOverlay == BookshelfOverlay.BatchDownloadConfirmDialog,
-        onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
-        title = stringResource(R.string.draw),
-        text = stringResource(R.string.sure_cache_book),
-        confirmText = stringResource(android.R.string.ok),
-        onConfirm = {
-            onIntent(BookshelfIntent.DismissOverlay)
-            onIntent(BookshelfIntent.DownloadBooks(selectedBookUrls))
-        },
-        dismissText = stringResource(android.R.string.cancel),
-        onDismiss = { onIntent(BookshelfIntent.DismissOverlay) }
-    )
-
-    if (activeOverlay == BookshelfOverlay.DeleteBooksConfirmDialog) {
-        // 勾选态只活在这次弹窗里：每次打开都从"不删源文件"起步
-        var deleteOriginal by remember { mutableStateOf(false) }
-        val hasLocalBook = remember(uiState.items, selectedBookUrls) {
-            uiState.items.any { it.book.isLocal && it.book.bookUrl in selectedBookUrls }
-        }
-        AppAlertDialog(
-            show = true,
-            onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
-            title = stringResource(R.string.delete_selected),
-            text = stringResource(R.string.bookshelf_selected_count, selectedBookUrls.size),
-            content = {
-                if (hasLocalBook) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppCheckbox(
-                            checked = deleteOriginal,
-                            onCheckedChange = { deleteOriginal = it }
-                        )
-                        AppText(
-                            text = stringResource(R.string.delete_book_file),
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                }
-            },
-            confirmText = stringResource(R.string.delete),
-            onConfirm = {
-                onIntent(BookshelfIntent.DeleteBooks(selectedBookUrls, deleteOriginal))
-                onIntent(BookshelfIntent.DismissOverlay)
-            },
-            dismissText = stringResource(R.string.cancel),
-            onDismiss = { onIntent(BookshelfIntent.DismissOverlay) }
-        )
-    }
+    BookshelfBookActionOverlays(uiState, onIntent, onBookInfo)
 
     if (uiState.isLoading) {
         val loadingDescription = uiState.loadingText ?: stringResource(R.string.loading)
@@ -1599,6 +1480,113 @@ private fun BookshelfOverlays(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun BookshelfBookActionOverlays(
+    uiState: BookshelfUiState,
+    onIntent: (BookshelfIntent) -> Unit,
+    onBookInfo: (BookShelfItem, String?) -> Unit,
+) {
+    val overlay = uiState.activeOverlay
+    if (overlay is BookshelfOverlay.BookActions) {
+        val item = uiState.items.firstOrNull { it.book.bookUrl == overlay.bookUrl }
+        if (item == null) {
+            LaunchedEffect(overlay) { onIntent(BookshelfIntent.DismissOverlay) }
+        } else {
+            val title = if (uiState.isBookLocked(item)) {
+                stringResource(R.string.private_hidden_label)
+            } else {
+                item.book.name
+            }
+            AppModalBottomSheet(
+                show = true,
+                title = title,
+                onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.book_info),
+                        icon = Icons.Default.Info,
+                        horizontalPadding = 16.dp,
+                        verticalPadding = 16.dp,
+                        iconSize = 24.dp,
+                        spacing = 12.dp,
+                        textStyle = LegadoTheme.typography.bodyLarge,
+                        onClick = {
+                            onIntent(BookshelfIntent.DismissOverlay)
+                            onBookInfo(item.book, overlay.sharedCoverKey)
+                        },
+                    )
+                    TextCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.delete),
+                        icon = Icons.Default.Delete,
+                        contentColor = LegadoTheme.colorScheme.error,
+                        horizontalPadding = 16.dp,
+                        verticalPadding = 16.dp,
+                        iconSize = 24.dp,
+                        spacing = 12.dp,
+                        textStyle = LegadoTheme.typography.bodyLarge,
+                        onClick = {
+                            onIntent(BookshelfIntent.ShowOverlay(
+                                BookshelfOverlay.DeleteBooksConfirmDialog(persistentSetOf(overlay.bookUrl))
+                            ))
+                        },
+                    )
+                }
+            }
+        }
+    }
+    if (overlay is BookshelfOverlay.DeleteBooksConfirmDialog) {
+        // 删除目标在打开确认框时固定；每次确认均默认保留源文件。
+        var deleteOriginal by remember(overlay) { mutableStateOf(false) }
+        val targets = overlay.bookUrls
+        val hasLocalBook = uiState.items.any { it.book.isLocal && it.book.bookUrl in targets }
+        val singleItem = uiState.items.firstOrNull { it.book.bookUrl == targets.singleOrNull() }
+        val bookTitle = singleItem?.let {
+            if (uiState.isBookLocked(it)) stringResource(R.string.private_hidden_label) else it.book.name
+        }
+        val deleteFileLabel = stringResource(R.string.delete_book_file)
+        AppAlertDialog(
+            show = true,
+            onDismissRequest = { onIntent(BookshelfIntent.DismissOverlay) },
+            title = stringResource(R.string.delete_selected),
+            text = if (bookTitle != null) {
+                stringResource(R.string.feature_bookshelf_delete_single_message, bookTitle)
+            } else {
+                stringResource(R.string.bookshelf_selected_count, targets.size)
+            },
+            content = {
+                if (hasLocalBook) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AppCheckbox(
+                                checked = deleteOriginal,
+                                onCheckedChange = { deleteOriginal = it },
+                                modifier = Modifier.semantics { contentDescription = deleteFileLabel },
+                            )
+                            AppText(text = deleteFileLabel, modifier = Modifier.padding(start = 4.dp))
+                        }
+                        if (!deleteOriginal) {
+                            AppText(
+                                text = stringResource(R.string.feature_bookshelf_keep_source_hint),
+                                style = LegadoTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                onIntent(BookshelfIntent.DeleteBooks(targets, deleteOriginal))
+                onIntent(BookshelfIntent.DismissOverlay)
+            },
+            dismissText = stringResource(R.string.cancel),
+            onDismiss = { onIntent(BookshelfIntent.DismissOverlay) },
+        )
     }
 }
 
@@ -1677,9 +1665,7 @@ fun BookshelfPage(
                         top = paddingValues.calculateTopPadding(),
                         bottom = 120.dp
                     ),
-                message = stringResource(R.string.bookshelf_empty_global_search),
-                buttonText = stringResource(R.string.global_search),
-                onButtonClick = onGlobalSearch
+                message = stringResource(R.string.local_reader_search_empty)
             )
         } else if (!uiState.isInitialLoading) {
             EmptyMessage(
@@ -1858,8 +1844,7 @@ fun BookshelfPage(
                                 if (uiState.isEditMode) {
                                     onToggleBookSelection(bookUi)
                                 } else {
-                                    // 长按一律进详情页：脱敏渲染在详情页内完成，
-                                    // 不给"长按只弹验证、进不去详情"的分叉
+                                    // 普通长按打开操作菜单；选择模式仍使用原有选择与排序手势。
                                     onBookLongClick(bookUi.book, sharedCoverKey)
                                 }
                             }

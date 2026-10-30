@@ -7,7 +7,6 @@ import io.legado.app.base.BaseRuleViewModel
 import io.legado.app.data.entities.TagGroupRule
 import io.legado.app.data.repository.BookRepository
 import io.legado.app.data.repository.TagGroupRuleRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.help.book.applyTagGroupRules
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.list.InteractionState
@@ -29,12 +28,10 @@ import kotlinx.coroutines.withContext
 
 class TagGroupRuleViewModel(
     application: Application,
-    uploadRepository: UploadRepository,
     private val bookRepository: BookRepository,
 ) : BaseRuleViewModel<TagGroupRuleItemUi, TagGroupRule, Long, TagGroupRuleUiState>(
     application,
     TagGroupRuleUiState(interaction = InteractionState(isLoading = true)),
-    uploadRepository
 ) {
     private val repository = TagGroupRuleRepository()
 
@@ -53,10 +50,7 @@ class TagGroupRuleViewModel(
                 delSelectionByIds(uiState.value.selectedIds)
                 setSelection(emptySet())
             }
-            TagGroupRuleIntent.UploadSelection -> {
-                val state = uiState.value
-                uploadSelectedRules(state.selectedIds, state.items)
-            }
+            TagGroupRuleIntent.UploadSelection -> Unit
             is TagGroupRuleIntent.ExportSelection -> {
                 val state = uiState.value
                 exportToUri(intent.uri, state.items, state.selectedIds)

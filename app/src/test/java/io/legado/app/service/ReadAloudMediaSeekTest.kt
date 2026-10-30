@@ -71,14 +71,6 @@ class ReadAloudMediaSeekTest {
         assertEquals(245, currentRangePosition(200, 5, 40))
     }
 
-    @Test
-    fun httpAudioTimeMapsOnlyToTheTextSynthesizedAfterSeek() {
-        assertEquals(40, httpReadAloudParagraphOffset(100, 40, 0, 6_000))
-        assertEquals(60, httpReadAloudParagraphOffset(100, 40, 2_000, 6_000))
-        assertEquals(100, httpReadAloudParagraphOffset(100, 40, 6_000, 6_000))
-        assertEquals(40, httpReadAloudParagraphOffset(100, 40, 2_000, 0))
-    }
-
     private fun seek(positionMs: Long, charsPerSecond: Float = 4f) = resolveReadAloudMediaSeek(
         positionMs, charsPerSecond, 11, content, chapterPositions,
     )

@@ -94,23 +94,8 @@ fun CoverConfigScreen(
             item {
                 SplicedColumnGroup {
                 SwitchSettingItem(
-                    title = stringResource(R.string.only_wifi),
-                    description = stringResource(R.string.only_wifi_summary),
-                    checked = settings.loadOnlyOnWifi,
-                    onCheckedChange = { value ->
-                        onIntent(CoverConfigIntent.SetLoadOnlyOnWifi(value))
-                    }
-                )
-
-                ClickableSettingItem(
-                    title = stringResource(R.string.cover_rule),
-                    description = stringResource(R.string.cover_rule_summary),
-                    onClick = { onIntent(CoverConfigIntent.ShowSheet(CoverConfigSheet.Rule)) }
-                )
-
-                SwitchSettingItem(
                     title = stringResource(R.string.use_default_cover),
-                    description = stringResource(R.string.use_default_cover_s),
+                    description = stringResource(R.string.feature_local_default_cover_summary),
                     checked = settings.useDefaultCover,
                     onCheckedChange = { value ->
                         onIntent(CoverConfigIntent.SetUseDefaultCover(value))
@@ -176,23 +161,6 @@ fun CoverConfigScreen(
                     entryValues = arrayOf("0", "1"),
                     onValueChange = { value ->
                         onIntent(CoverConfigIntent.SetInfoOrientation(value))
-                    }
-                )
-            }
-
-            SplicedColumnGroup(title = stringResource(R.string.network_book_badge_setting)) {
-                DropdownListSettingItem(
-                    title = stringResource(R.string.network_book_badge_setting),
-                    selectedValue = settings.exploreFilterState.toString(),
-                    displayEntries = arrayOf(
-                        stringResource(R.string.filter_show_all),
-                        stringResource(R.string.filter_hide_in_shelf),
-                        stringResource(R.string.filter_hide_same_name_author),
-                        stringResource(R.string.filter_show_not_in_shelf_only)
-                    ),
-                    entryValues = arrayOf("0", "1", "2", "3"),
-                    onValueChange = { value ->
-                        onIntent(CoverConfigIntent.SetExploreFilterState(value.toInt()))
                     }
                 )
             }
@@ -325,13 +293,6 @@ fun CoverConfigScreen(
             }
         }
     }
-
-    CoverRuleConfigSheet(
-        show = state.activeSheet == CoverConfigSheet.Rule,
-        state = state.rule,
-        onIntent = onIntent,
-        onDismissRequest = { onIntent(CoverConfigIntent.DismissSheet) },
-    )
 
     if (state.activeSheet == CoverConfigSheet.Album) {
         CoverAlbumSelectSheet(

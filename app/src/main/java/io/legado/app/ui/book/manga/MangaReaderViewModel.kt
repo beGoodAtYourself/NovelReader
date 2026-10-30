@@ -19,7 +19,6 @@ import io.legado.app.domain.model.manga.MangaSessionEvent
 import io.legado.app.domain.model.manga.MangaSessionState
 import io.legado.app.domain.model.settings.MangaSettings
 import io.legado.app.domain.usecase.CacheBookChaptersUseCase
-import io.legado.app.help.coil.CoverFetcher
 import io.legado.app.help.glide.progress.ProgressManager
 import io.legado.app.model.SourceCallBack
 import io.legado.app.ui.book.manga.config.MangaColorFilterConfig
@@ -1372,10 +1371,6 @@ class MangaReaderViewModel(
     }
 
     private fun retryPage(key: String) {
-        CoverFetcher.clearFailure(
-            (_uiState.value.pages.firstOrNull { it.key == key } as? MangaReaderItemUi.Page)
-                ?.imageUrl ?: return
-        )
         _uiState.update { state ->
             val index = state.pages.indexOfFirst { it.key == key }
             val page =
@@ -1392,9 +1387,6 @@ class MangaReaderViewModel(
     }
 
     private fun retryFailedPages(chapterIndex: Int) {
-        _uiState.value.pages.filterIsInstance<MangaReaderItemUi.Page>()
-            .filter { it.chapterIndex == chapterIndex && it.loadState is MangaPageLoadState.Failed }
-            .forEach { CoverFetcher.clearFailure(it.imageUrl) }
         _uiState.update { state ->
             state.copy(pages = state.pages.map { item ->
                 if (item is MangaReaderItemUi.Page && item.chapterIndex == chapterIndex &&

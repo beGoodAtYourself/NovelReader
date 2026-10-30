@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_bookshelf_delete_single_message">Remove “%1$s” from the bookshelf?</string>
+    <string name="feature_bookshelf_keep_source_hint">The source file will be kept and can be imported again.</string>
+</resources>

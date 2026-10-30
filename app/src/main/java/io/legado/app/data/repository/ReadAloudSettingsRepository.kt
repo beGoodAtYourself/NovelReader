@@ -76,7 +76,7 @@ class ReadAloudSettingsRepository : ReadAloudSettingsGateway {
 }
 
 internal fun Preferences.toReadAloudSettings(): ReadAloudSettings = ReadAloudSettings(
-    ttsEngine = compatDsString(PreferKey.ttsEngine),
+    ttsEngine = null,
     voicePreviewText = compatDsString(PreferKey.voicePreviewText),
     ttsParagraphInterval = compatDsValue(ReadAloudKeys.TtsParagraphInterval, 0),
     audioCacheCleanTime = compatDsValue(ReadAloudKeys.AudioCacheCleanTime, 10),
@@ -98,7 +98,7 @@ internal fun Preferences.toReadAloudSettings(): ReadAloudSettings = ReadAloudSet
     androidMediaControlEnabled = compatDsValue(ReadAloudKeys.AndroidMediaControlEnabled, false),
     systemMediaControlCompatibilityChange =
         compatDsValue(ReadAloudKeys.SystemMediaControlCompatibilityChange, true),
-    streamReadAloudAudio = compatDsValue(ReadAloudKeys.StreamReadAloudAudio, false),
+    streamReadAloudAudio = false,
     ttsTimer = PlaybackTimer.normalize(compatDsValue(ReadAloudKeys.TtsTimer, 0)),
     finishCurrentChapterAfterTimer =
         compatDsValue(ReadAloudKeys.FinishCurrentChapterAfterTimer, false),
@@ -111,14 +111,14 @@ internal fun Preferences.toReadAloudSettings(): ReadAloudSettings = ReadAloudSet
     ),
     ttsFollowSys = compatDsValue(ReadAloudKeys.TtsFollowSys, true),
     ttsSpeechRate = compatDsValue(ReadAloudKeys.TtsSpeechRate, 5),
-    speechAnalysisMode = compatDsValue(ReadAloudKeys.SpeechAnalysisMode, "rule"),
+    speechAnalysisMode = "rule",
     speechAnalysisReasoningLevel = compatDsValue(
         ReadAloudKeys.SpeechAnalysisReasoningLevel,
         AiReasoningLevel.OFF.storageValue,
     ),
-    useMultiSpeaker = compatDsValue(ReadAloudKeys.UseMultiSpeaker, true),
-    multiRoleCast = compatDsValue(ReadAloudKeys.MultiRoleCast, false),
-    bgmAssign = compatDsValue(ReadAloudKeys.BgmAssign, false),
+    useMultiSpeaker = false,
+    multiRoleCast = false,
+    bgmAssign = false,
     defaultInterface = compatDsValue(
         ReadAloudKeys.DefaultInterface,
         ReadAloudSettingsRepository.DEFAULT_INTERFACE_CLASSIC,

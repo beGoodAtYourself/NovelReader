@@ -8,7 +8,6 @@ import io.legado.app.domain.gateway.ThemeSettingsGateway
 import io.legado.app.domain.model.settings.AppShellSettings
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.domain.usecase.AppStartupMaintenanceUseCase
-import io.legado.app.domain.usecase.WebDavBackupUseCase
 import io.legado.app.ui.main.my.PrefClickEvent
 import io.legado.app.utils.eventBus.FlowEventBus
 import kotlinx.collections.immutable.toImmutableList
@@ -21,7 +20,6 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val appStartupMaintenanceUseCase: AppStartupMaintenanceUseCase,
-    private val webDavBackupUseCase: WebDavBackupUseCase,
     private val appShellSettingsGateway: AppShellSettingsGateway,
     private val themeSettingsGateway: ThemeSettingsGateway,
 ) : ViewModel() {
@@ -59,11 +57,6 @@ class MainViewModel(
         FlowEventBus.post(EventBus.UP_ALL_BOOK_TOC, Unit)
     }
 
-    fun restoreWebDav(name: String) {
-        viewModelScope.launch { webDavBackupUseCase.restore(name) }
-    }
-
-    suspend fun getLatestWebDavBackup() = webDavBackupUseCase.getLatestBackup()
 
     private fun setNavExtended(expanded: Boolean) {
         if (_uiState.value.navExtended == expanded) return

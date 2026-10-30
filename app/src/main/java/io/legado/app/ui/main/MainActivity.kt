@@ -1,15 +1,12 @@
 package io.legado.app.ui.main
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.format.DateUtils
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -48,10 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -61,10 +56,8 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
 import io.legado.app.BuildConfig
-import io.legado.app.R
 import io.legado.app.base.BaseComposeActivity
 import io.legado.app.constant.AppConst.appInfo
-import io.legado.app.constant.EventBus
 import io.legado.app.core.ui.player.playerUnderlaySemantics
 import io.legado.app.data.repository.ReadAloudSettingsRepository
 import io.legado.app.domain.gateway.BackupSettingsGateway
@@ -73,18 +66,12 @@ import io.legado.app.domain.gateway.OtherSettingsGateway
 import io.legado.app.domain.gateway.PlaybackCapsuleGateway
 import io.legado.app.domain.model.PlaybackCapsuleSource
 import io.legado.app.domain.model.PlaybackCapsuleState
-import io.legado.app.help.LocalNetworkAccess
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.coroutine.Coroutine
-import io.legado.app.help.http.LocalNetworkBlockedNotifier
 import io.legado.app.help.storage.Backup
-import io.legado.app.help.update.AppUpdateGitHub
-import io.legado.app.lib.dialogs.alert
 import io.legado.app.model.AudioPlay
-import io.legado.app.service.WebService
 import io.legado.app.ui.about.MarkdownSheet
-import io.legado.app.ui.about.UpdateDialog
 import io.legado.app.ui.book.audio.AudioPlayViewModel
 import io.legado.app.ui.book.read.ReadAloudControlsRequestBus
 import io.legado.app.ui.book.read.ReadBookInputHandler
@@ -103,13 +90,8 @@ import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.components.navigation.shouldUseRail
 import io.legado.app.ui.widget.components.privacy.PrivateAppStartGate
 import io.legado.app.utils.LogUtils
-import io.legado.app.utils.eventBus.FlowEventBus
-import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.startActivity
-import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.toggleSystemBar
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,11 +101,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * 主界面
@@ -345,28 +324,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     private val readAloudSettingsRepository by inject<ReadAloudSettingsRepository>()
     internal val navRouteTracker by inject<MainNavRouteTracker>()
     private val routeEvents = MutableSharedFlow<RouteEvent>(extraBufferCapacity = 1)
-    /**
-     * Web 服务与「局域网请求」各自持有独立的 launcher：授权结果互不影响，也不需要用一个可变字段
-     * 记录「本次申请的目的」——那种写法在配置变更/进程重建后会丢失，导致结果被误判为 Web 服务申请。
-     */
-    private val webServiceLocalNetworkPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            WebService.startForeground(this)
-        } else {
-            toastOnUi(R.string.web_service_local_network_permission_denied)
-        }
-    }
-
-    private val localNetworkRequestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        // 授权后由用户重试原操作；未授权时提示授予方式。
-        if (!granted) {
-            toastOnUi(R.string.local_network_permission_required)
-        }
-    }
     private var shouldApplyDefaultToRead = true
     private var restoredReadBookRoute: MainRouteReadBook? = null
     internal var activeReadBookInputHandler: ReadBookInputHandler? = null
@@ -384,41 +341,7 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         super.onCreate(savedInstanceState)
 
         if (checkStartupRoute()) return
-        val shouldAutoCheckUpdate = startupUpdateCheckGate.consume(
-            otherSettingsGateway.currentSettings.autoCheckUpdateOnStart
-        )
-
-        // 智能自启：如果上次是手动开启状态（web_service_auto 为 true），则自启；
-        // 本地网络权限缺失时先申请，磁贴等入口也通过该 extra 转发到这里。
-        val requestWebService = otherSettingsGateway.currentSettings.webServiceAutoStart ||
-                intent?.getBooleanExtra(MainIntent.EXTRA_WEB_SERVICE_LOCAL_NETWORK, false) == true
-        if (requestWebService) {
-            startWebServiceWithLocalNetworkPermission()
-        }
-
-        // 局域网请求（书源 / 图源 / WebDAV）被系统拦下时，前台立即补一次本地网络权限申请。
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                FlowEventBus.with<Unit>(EventBus.LOCAL_NETWORK_PERMISSION_REQUIRED).collect {
-                    requestLocalNetworkPermissionIfBlocked()
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            //版本更新
-            upVersion()
-            //备份同步
-            backupSync()
-            //自动更新书籍
-            val isAutoRefreshedBook = savedInstanceState?.getBoolean("isAutoRefreshedBook") ?: false
-            if (otherSettingsGateway.currentSettings.autoRefresh && !isAutoRefreshedBook) {
-                viewModel.upAllBookToc()
-            }
-            if (shouldAutoCheckUpdate) {
-                checkUpdateOnStart()
-            }
-        }
+        LocalConfig.versionCode = appInfo.versionCode
 
         // 书架封面预热：必须早于书架首帧发起。卡片请求带了 placeholderMemoryCacheKey，
         // 内存缓存里已有同一键时 Coil 会在真实加载之前就把缓存图交给 target，于是进入书架
@@ -429,21 +352,8 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         }
     }
 
-    /**
-     * Android 17 (API 37) 起 Web 服务需要本地网络权限才能接受局域网入站连接。
-     * 已授予直接启动；未授予先申请，授予后由 launcher 回调补启。
-     */
-    private fun startWebServiceWithLocalNetworkPermission() {
-        if (LocalNetworkAccess.isGranted(this)) {
-            WebService.startForeground(this)
-        } else {
-            webServiceLocalNetworkPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
-        }
-    }
-
     override fun onResume() {
         super.onResume()
-        requestLocalNetworkPermissionIfBlocked()
         if (isPlaybackOverlayVisible) {
             // 阅读器在 ON_RESUME 里会按自己的菜单状态重设系统栏（可能重新隐藏），
             // 播放浮层盖在它上面，晚一帧再把系统栏抢回来。
@@ -453,25 +363,11 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         }
     }
 
-    /**
-     * 书源 / 图源 / WebDAV 等局域网请求被系统拦掉后，网络层会留下标记（见
-     * [LocalNetworkBlockedNotifier]）；回到前台时补一次权限申请，用户重试原操作即可。
-     */
-    private fun requestLocalNetworkPermissionIfBlocked() {
-        if (!LocalNetworkBlockedNotifier.consumePermissionRequest()) return
-        if (LocalNetworkAccess.isGranted(this)) return
-        localNetworkRequestPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra(MainIntent.EXTRA_OPEN_READ_ALOUD_PLAYER, false)) {
             ReadAloudPlayerOverlayBus.request()
-            return
-        }
-        if (intent.getBooleanExtra(MainIntent.EXTRA_WEB_SERVICE_LOCAL_NETWORK, false)) {
-            startWebServiceWithLocalNetworkPermission()
             return
         }
         if (!intent.hasExplicitStartRoute()) return
@@ -556,6 +452,9 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
             }
         }
         val backStack = rememberNavBackStack(*startRoutes)
+        // 恢复旧版导航栈时也移除已经下线的目的地，避免进入未注册页面。
+        backStack.removeAll { !isLocalReaderRoute(it) }
+        if (backStack.isEmpty()) backStack.add(MainRouteHome)
         val paneStack = backStack.dropLastWhile {
             it is MainRouteSourceLogin || it is MainRouteSearchContent ||
                     it is MainRouteAudioPlay || it == MainRouteReadAloudPlayer
@@ -1049,75 +948,8 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         }
     }
 
-    private fun checkUpdateOnStart() {
-        AppUpdateGitHub.check(lifecycleScope)
-            .onSuccess { updateInfo ->
-                showDialogFragment(UpdateDialog(updateInfo))
-            }
-    }
-
-    /**
-     * 版本更新日志
-     */
-    private suspend fun upVersion() = suspendCoroutine<Unit?> { block ->
-        if (LocalConfig.versionCode == appInfo.versionCode) {
-            block.resume(null)
-            return@suspendCoroutine
-        }
-        LocalConfig.versionCode = appInfo.versionCode
-        if (!BuildConfig.DEBUG) {
-            lifecycleScope.launch {
-                try {
-                    val info = AppUpdateGitHub.getReleaseByTag(BuildConfig.VERSION_NAME)
-                    if (info != null) {
-                        val dialog = UpdateDialog(info, UpdateDialog.Mode.VIEW_LOG)
-                        dialog.setOnDismissListener { block.resume(null) }
-                        showDialogFragment(dialog)
-                    } else {
-                        block.resume(null)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    block.resume(null)
-                }
-            }
-        } else {
-            block.resume(null)
-        }
-    }
-
-    /**
-     * 备份同步
-     */
-    private fun backupSync() {
-        if (!backupSettingsGateway.currentSettings.autoCheckNewBackup) {
-            return
-        }
-        lifecycleScope.launch {
-            val lastBackupFile = try {
-                withContext(IO) { viewModel.getLatestWebDavBackup() }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                return@launch
-            } ?: return@launch
-            if (lastBackupFile.lastModify - LocalConfig.lastBackup > DateUtils.MINUTE_IN_MILLIS) {
-                LocalConfig.lastBackup = lastBackupFile.lastModify
-                alert(R.string.restore, R.string.webdav_after_local_restore_confirm) {
-                    cancelButton()
-                    okButton {
-                        viewModel.restoreWebDav(lastBackupFile.name)
-                    }
-                }
-            }
-        }
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        if (otherSettingsGateway.currentSettings.autoRefresh) {
-            outState.putBoolean("isAutoRefreshedBook", true)
-        }
         val readRoute = navRouteTracker.backStack.value.lastOrNull() as? MainRouteReadBook
             ?: activeReadBookRoute
         if (readRoute != null) {

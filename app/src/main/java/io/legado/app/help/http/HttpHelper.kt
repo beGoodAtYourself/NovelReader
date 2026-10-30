@@ -1,16 +1,13 @@
 package io.legado.app.help.http
 
-import io.legado.app.constant.AppConst
 import io.legado.app.data.entities.BaseSource
 import io.legado.app.help.CacheManager
 import io.legado.app.help.ConcurrentRateLimiter
 import io.legado.app.help.glide.progress.ProgressManager.LISTENER
 import io.legado.app.help.glide.progress.ProgressResponseBody
 import io.legado.app.help.glide.progress.ProgressUrlTag
-import io.legado.app.help.http.CookieManager.cookieJarHeader
 import io.legado.app.utils.NetworkUtils
 import okhttp3.Cache
-import okhttp3.ConnectionSpec
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Credentials
@@ -22,9 +19,6 @@ import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 private val proxyClientCache: ConcurrentHashMap<String, OkHttpClient> by lazy {
     ConcurrentHashMap()
@@ -54,96 +48,11 @@ val cookieJar by lazy {
     }
 }
 
-/**
- * 强制缓存拦截器，对于封面请求（由CoverFetcher标记），强制缓存30天
- */
-private val cacheControlInterceptor = Interceptor { chain ->
-    val request = chain.request()
-    val response = chain.proceed(request)
-    if (request.tag() === io.legado.app.help.coil.CoverFetcher.COVER_REQUEST_TAG) {
-        response.newBuilder()
-            .header("Cache-Control", "public, max-age=2592000")
-            .removeHeader("Pragma")
-            .build()
-    } else {
-        response
-    }
-}
-
+// 本地版拒绝所有 HTTP 请求，旧备份中的远程地址也不能重新启用联网。
 val okHttpClient: OkHttpClient by lazy {
-    val specs = arrayListOf(
-        ConnectionSpec.MODERN_TLS,
-        ConnectionSpec.COMPATIBLE_TLS,
-        ConnectionSpec.CLEARTEXT
-    )
-
-    //TODO：自定义缓存大小
-    val cache = Cache(File(appCtx.cacheDir, "http_cache"), 100L * 1024L * 1024L)
-
-    val builder = OkHttpClient.Builder()
-        .cache(cache)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .callTimeout(60, TimeUnit.SECONDS)
-        //.cookieJar(cookieJar = cookieJar)
-        .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory, SSLHelper.unsafeTrustManager)
-        .retryOnConnectionFailure(true)
-        .hostnameVerifier(SSLHelper.unsafeHostnameVerifier)
-        .connectionSpecs(specs)
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .addInterceptor(OkHttpExceptionInterceptor)
-        .addInterceptor { chain ->
-            val request = chain.request()
-            val builder = request.newBuilder()
-            if (request.header(AppConst.UA_NAME) == null) {
-                builder.addHeader(AppConst.UA_NAME, cacheSettingsGateway.currentSettings.userAgent)
-            } else if (request.header(AppConst.UA_NAME) == "null") {
-                builder.removeHeader(AppConst.UA_NAME)
-            }
-            builder.addHeader("Keep-Alive", "300")
-            builder.addHeader("Connection", "Keep-Alive")
-            chain.proceed(builder.build())
-        }
-        .addNetworkInterceptor(cacheControlInterceptor) // 添加强制缓存拦截器
-        .addNetworkInterceptor { chain ->
-            var request = chain.request()
-            val enableCookieJar = request.header(cookieJarHeader) != null
-
-            if (enableCookieJar) {
-                val requestBuilder = request.newBuilder()
-                requestBuilder.removeHeader(cookieJarHeader)
-                request = CookieManager.loadRequest(requestBuilder.build())
-            }
-
-            val networkResponse = chain.proceed(request)
-
-            if (enableCookieJar) {
-                CookieManager.saveResponse(networkResponse)
-            }
-            networkResponse
-        }
-    if (cacheSettingsGateway.currentSettings.cronetEnabled) {
-        if (Cronet.loader?.install() == true) {
-            Cronet.interceptor?.let {
-                builder.addInterceptor(it)
-            }
-        }
-    }
-    builder.addInterceptor(DecompressInterceptor)
-    builder.build().apply {
-        val okHttpName =
-            OkHttpClient::class.java.name.removePrefix("okhttp3.").removeSuffix("Client")
-        val executor = dispatcher.executorService as ThreadPoolExecutor
-        val threadName = "$okHttpName Dispatcher"
-        executor.threadFactory = ThreadFactory { runnable ->
-            Thread(runnable, threadName).apply {
-                isDaemon = false
-                uncaughtExceptionHandler = OkhttpUncaughtExceptionHandler
-            }
-        }
-    }
+    OkHttpClient.Builder()
+        .addInterceptor { throw java.io.IOException("当前版本仅支持本地文件") }
+        .build()
 }
 
 val okHttpClientManga by lazy {

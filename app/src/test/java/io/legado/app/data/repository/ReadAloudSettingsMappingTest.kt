@@ -20,7 +20,7 @@ class ReadAloudSettingsMappingTest {
     @Test
     fun `朗读设置 29 键读映射逐字段对应`() {
         readAloudMappingSamples().forEach { expected ->
-            assertEquals(expected, expected.expectedPrefMap().toTestPreferences().toReadAloudSettings())
+            assertEquals(expected.copy(ttsEngine = null, speechAnalysisMode = "rule", useMultiSpeaker = false, multiRoleCast = false, bgmAssign = false, streamReadAloudAudio = false), expected.expectedPrefMap().toTestPreferences().toReadAloudSettings())
         }
     }
 
@@ -41,7 +41,6 @@ class ReadAloudSettingsMappingTest {
 
         assertEquals(
             mapOf(
-                PreferKey.ttsEngine to null,
                 CAPSULE_OFFSET_X to 12.5f,
                 CAPSULE_OFFSET_Y to -8.25f,
             ),

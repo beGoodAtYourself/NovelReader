@@ -54,6 +54,7 @@ object MainNavigator {
             backStack.clear()
             backStack.add(MainRouteHome)
         }
+        if (!isLocalReaderRoute(route)) return
         val currentRoute = backStack.lastOrNull()
         if (currentRoute == route) return
 
@@ -432,8 +433,8 @@ object MainNavigator {
 
     fun resolveStartRoute(intent: Intent?): NavKey {
         val route = intent?.getStringExtra(MainIntent.EXTRA_START_ROUTE)
-        resolveRssStartRoute(route, intent)?.let { return it }
-        return resolveStartRoute(route, intent)
+        val resolved = resolveRssStartRoute(route, intent) ?: resolveStartRoute(route, intent)
+        return resolved.takeIf(::isLocalReaderRoute) ?: MainRouteHome
     }
 
     private fun resolveRssStartRoute(route: String?, intent: Intent?): NavKey? {

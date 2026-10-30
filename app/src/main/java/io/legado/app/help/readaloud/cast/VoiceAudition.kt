@@ -2,27 +2,17 @@ package io.legado.app.help.readaloud.cast
 
 import android.content.Context
 import io.legado.app.R
-import io.legado.app.data.repository.HttpTtsRepository
-import io.legado.app.help.readaloud.playback.HttpTtsAudioSynthesizer
-import io.legado.app.domain.gateway.CloudTtsEngineGateway
 import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.gateway.ReadAloudVoiceGateway
 import io.legado.app.domain.model.readaloud.ReadAloudVoice
 import io.legado.app.domain.model.readaloud.SystemTtsVoiceConfig
-import io.legado.app.help.readaloud.playback.CloudTtsAudioSynthesizer
 import io.legado.app.help.readaloud.playback.SystemTtsFileSynthesizer
 import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.utils.GSON
 import org.koin.core.context.GlobalContext
 import java.io.File
 
-/**
- * 音色试听：按这条音色自己的参数合成一句话，返回可直接播放的文件。
- *
- * 合成链路与朗读服务一致（云 TTS 用 [CloudTtsAudioSynthesizer] 的音色重载，系统 TTS 用
- * [SystemTtsFileSynthesizer] 文件合成），只是输出到缓存的试听目录，不进朗读队列、
- * 不影响正在播放的内容。HTTP 与朗读服务共用源脚本与并发配额。
- */
+/** 使用系统语音引擎试听本地音色，不执行云端或 HTTP 合成。 */
 object VoiceAudition {
 
     suspend fun synthesize(context: Context, voiceId: String, text: String): File? {
@@ -31,10 +21,6 @@ object VoiceAudition {
         val voice = koin.get<ReadAloudVoiceGateway>().getVoice(voiceId) ?: return null
         val output = File(File(context.cacheDir, "voice_audition"), "${voice.id.hashCode()}.audio")
         val success = when (voice.engineType) {
-            ReadAloudVoice.ENGINE_CLOUD ->
-                CloudTtsAudioSynthesizer(koin.get<CloudTtsEngineGateway>())
-                    .synthesize(voice, text, output)
-
             ReadAloudVoice.ENGINE_SYSTEM -> {
                 val config = runCatching {
                     GSON.fromJson(voice.traitsJson, SystemTtsVoiceConfig::class.java)
@@ -48,9 +34,6 @@ object VoiceAudition {
                     pitch = config.pitch ?: 1f,
                 )
             }
-
-            ReadAloudVoice.ENGINE_HTTP ->
-                HttpTtsAudioSynthesizer(koin.get<HttpTtsRepository>()).synthesize(voice, text, output)
 
             else -> false
         }

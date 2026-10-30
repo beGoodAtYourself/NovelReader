@@ -7,7 +7,6 @@ import androidx.annotation.Keep
 import io.legado.app.BuildConfig
 import io.legado.app.help.crypto.digest
 import io.legado.app.help.crypto.toHexString
-import io.legado.app.help.update.AppVariant
 import org.apache.commons.lang3.time.FastDateFormat
 import splitties.init.appCtx
 
@@ -62,12 +61,6 @@ object AppConst {
         appCtx.packageManager.getPackageInfo(appCtx.packageName, PackageManager.GET_ACTIVITIES)
             ?.let {
                 appInfo.versionName = it.versionName!!
-                appInfo.appVariant = when {
-                    isBeta -> AppVariant.BETA_RELEASE
-                    isOfficial -> AppVariant.OFFICIAL
-                    else -> AppVariant.UNKNOWN
-                }
-
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                     appInfo.versionCode = it.longVersionCode
                 } else {
@@ -96,7 +89,6 @@ object AppConst {
     data class AppInfo(
         var versionCode: Long = 0L,
         var versionName: String = "",
-        var appVariant: AppVariant = AppVariant.UNKNOWN
     )
 
     /**

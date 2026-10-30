@@ -2,6 +2,7 @@ package io.legado.app.domain.usecase
 
 import android.app.Application
 import androidx.room.Room
+import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.readRecord.ReadRecordSession
@@ -75,7 +76,7 @@ class ResolveBookshelfConflictUseCaseTest {
             customTag = "tag-a",
             remark = "remark-a",
         )
-        val newBook = Book(bookUrl = newUrl, name = name, author = author)
+        val newBook = Book(type = BookType.text or BookType.local, bookUrl = newUrl, name = name, author = author)
 
         useCase.coexist(
             existingBookUrl = existingUrl,
@@ -117,7 +118,7 @@ class ResolveBookshelfConflictUseCaseTest {
 
         useCase.coexist(
             existingBookUrl = existingUrl,
-            newBook = Book(bookUrl = newUrl, name = name, author = author),
+            newBook = Book(type = BookType.text or BookType.local, bookUrl = newUrl, name = name, author = author),
             options = ChangeSourceMigrationOptions(),
             chapters = emptyList(),
         )
@@ -134,7 +135,7 @@ class ResolveBookshelfConflictUseCaseTest {
     @Test
     fun `migrate without a toc cancels instead of wiping the existing book`() = runBlocking {
         insertShelfBook(bookUrl = existingUrl, durChapterIndex = 5, durChapterTitle = "第五章")
-        val newBook = Book(bookUrl = newUrl, name = name, author = author)
+        val newBook = Book(type = BookType.text or BookType.local, bookUrl = newUrl, name = name, author = author)
 
         // 书源不存在 -> 目录取不到，迁移必须中止
         val error = runCatching {
@@ -163,6 +164,7 @@ class ResolveBookshelfConflictUseCaseTest {
     ) {
         database.bookDao.insert(
             Book(
+                type = BookType.text or BookType.local,
                 bookUrl = bookUrl,
                 name = name,
                 author = author,
@@ -191,7 +193,7 @@ class ResolveBookshelfConflictUseCaseTest {
     private companion object {
         const val name = "斗破苍穹"
         const val author = "天蚕土豆"
-        const val existingUrl = "https://old.example/book"
-        const val newUrl = "https://new.example/book"
+        const val existingUrl = "file:///old.example/book"
+        const val newUrl = "file:///new.example/book"
     }
 }

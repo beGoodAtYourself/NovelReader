@@ -59,7 +59,6 @@ fun ClickActionConfigSheet(
         9 to stringResource(R.string.replace_state_change),
         10 to stringResource(R.string.chapter_list),
         11 to stringResource(R.string.search_content),
-        12 to stringResource(R.string.sync_book_progress_t),
         13 to stringResource(R.string.read_aloud_pause_resume),
     )
 

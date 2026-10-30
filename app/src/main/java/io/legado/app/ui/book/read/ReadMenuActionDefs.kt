@@ -2,23 +2,12 @@ package io.legado.app.ui.book.read
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Toc
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Brightness6
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Extension
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.FindReplace
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Refresh
@@ -26,9 +15,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -52,21 +38,7 @@ internal data class ReadMenuButtonInfo(
 )
 
 /** 旧版写死在顶栏上、后来才进池的那批按钮 id。 */
-internal val ReadBookTopBarOnlyActionIds = listOf(
-    "download",
-    "refresh",
-    "change_source",
-    "audio_download",
-    "source_custom_button",
-    "toc_rule",
-    "charset",
-    // 书源四项：原本只挂在顶栏「章名 + 书源」那一行，开了标题胶囊或
-    // 「精简顶部按钮」后这行/这批按钮会消失，所以单独进池，可配到顶栏/底栏/更多操作。
-    "source_login",
-    "source_pay",
-    "edit_source",
-    "disable_source",
-)
+internal val ReadBookTopBarOnlyActionIds = listOf("toc_rule", "charset")
 
 /** 完整按钮池：顶栏专属那批在前，其余接共享图标池 [ReadBookButtonIds]（去重）。 */
 internal val ReadMenuActionIds =
@@ -103,12 +75,8 @@ internal data class ReadMenuActionDef(
  * 顶栏/浮动图标/底栏的渲染过滤与「更多操作」的 `applicable` 都走这里。
  */
 internal fun isReadMenuActionApplicable(id: String, state: ReadBookUiState): Boolean = when (id) {
-    "source_custom_button" -> !state.isLocalBook && state.bookSource?.customButton == true
-    "change_source", "refresh", "download" -> !state.isLocalBook
-    "source_login" -> !state.isLocalBook && !state.bookSource?.loginUrl.isNullOrBlank()
-    // 与顶栏书源菜单同一判定：只在「VIP 且未购买」的章节可付费
-    "source_pay" -> state.chapterPayable
-    "edit_source", "disable_source" -> !state.isLocalBook
+    "source_custom_button", "change_source", "refresh", "download",
+    "source_login", "source_pay", "edit_source", "disable_source" -> false
     "toc_rule" -> state.isLocalBook && state.isLocalTxt
     "charset" -> state.isLocalBook
     else -> true
@@ -128,31 +96,6 @@ internal fun readMenuActionScopeLabelRes(id: String): Int? = when (id) {
 /** 顶栏专属按钮的图标与文案。 */
 internal fun topBarActionButtonInfos(context: Context): List<ReadMenuButtonInfo> = listOf(
     ReadMenuButtonInfo(
-        "download",
-        Icons.Default.CloudDownload,
-        context.getString(R.string.offline_cache),
-    ),
-    ReadMenuButtonInfo(
-        "refresh",
-        Icons.Default.Refresh,
-        context.getString(R.string.menu_refresh),
-    ),
-    ReadMenuButtonInfo(
-        "change_source",
-        Icons.Default.SwapHoriz,
-        context.getString(R.string.change_origin),
-    ),
-    ReadMenuButtonInfo(
-        "audio_download",
-        Icons.Default.Download,
-        context.getString(R.string.read_aloud_audio_download_entry),
-    ),
-    ReadMenuButtonInfo(
-        "source_custom_button",
-        Icons.Default.Extension,
-        context.getString(R.string.custom_button),
-    ),
-    ReadMenuButtonInfo(
         "toc_rule",
         Icons.AutoMirrored.Filled.Toc,
         context.getString(R.string.txt_toc_rule),
@@ -161,26 +104,6 @@ internal fun topBarActionButtonInfos(context: Context): List<ReadMenuButtonInfo>
         "charset",
         Icons.Default.Translate,
         context.getString(R.string.set_charset),
-    ),
-    ReadMenuButtonInfo(
-        "source_login",
-        Icons.AutoMirrored.Filled.Login,
-        context.getString(R.string.login),
-    ),
-    ReadMenuButtonInfo(
-        "source_pay",
-        Icons.Default.Payment,
-        context.getString(R.string.chapter_pay),
-    ),
-    ReadMenuButtonInfo(
-        "edit_source",
-        Icons.Default.Edit,
-        context.getString(R.string.edit_source),
-    ),
-    ReadMenuButtonInfo(
-        "disable_source",
-        Icons.Default.Block,
-        context.getString(R.string.disable_source),
     ),
 )
 
@@ -235,49 +158,9 @@ internal fun readMenuButtonInfos(context: Context): List<ReadMenuButtonInfo> = l
         context.getString(R.string.text_processing),
     ),
     ReadMenuButtonInfo(
-        "translate",
-        Icons.Default.Translate,
-        context.getString(R.string.translate),
-    ),
-    ReadMenuButtonInfo(
         "refresh_current",
         Icons.Default.Refresh,
         context.getString(R.string.menu_refresh_dur),
-    ),
-    ReadMenuButtonInfo(
-        "ai_chat",
-        Icons.AutoMirrored.Filled.Chat,
-        context.getString(R.string.ai_chat),
-    ),
-    ReadMenuButtonInfo(
-        "ai_summary",
-        Icons.Default.AutoAwesome,
-        context.getString(R.string.ai_chapter_summary),
-    ),
-    ReadMenuButtonInfo(
-        "ai_rewrite",
-        Icons.Default.Edit,
-        context.getString(R.string.ai_text_rewrite),
-    ),
-    ReadMenuButtonInfo(
-        "multi_role_read",
-        Icons.Default.Groups,
-        context.getString(R.string.use_multi_speaker),
-    ),
-    ReadMenuButtonInfo(
-        "multi_role_cast",
-        Icons.Default.Face,
-        context.getString(R.string.multi_role_cast),
-    ),
-    ReadMenuButtonInfo(
-        "cast_table",
-        Icons.Default.TableRows,
-        context.getString(R.string.book_voice_casting),
-    ),
-    ReadMenuButtonInfo(
-        "ai_cast",
-        Icons.Default.SmartToy,
-        context.getString(R.string.ai_cast_roles),
     ),
     ReadMenuButtonInfo(
         "more_actions",
@@ -314,47 +197,11 @@ internal fun buildTopBarActionDefs(
         )
     }
     return listOf(
-        def("download") {
-            onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Download))
-        },
-        def(
-            "refresh",
-            longPressMenu = ReadMenuLongPressMenu.Refresh,
-        ) {
-            onIntent(ReadBookIntent.MenuRefreshDur)
-        },
-        def(
-            "change_source",
-            longPressMenu = ReadMenuLongPressMenu.ChangeSource,
-        ) {
-            onIntent(ReadBookIntent.MenuChangeSource)
-        },
-        def("audio_download") {
-            onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.AudioDownload))
-        },
-        def(
-            "source_custom_button",
-            onLongClick = { onIntent(ReadBookIntent.SourceCustomButton(true)) },
-        ) {
-            onIntent(ReadBookIntent.SourceCustomButton(false))
-        },
         def("toc_rule") {
             onIntent(ReadBookIntent.MenuTocRegex)
         },
         def("charset") {
             onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Charset))
-        },
-        def("source_login") {
-            onIntent(ReadBookIntent.ShowLogin)
-        },
-        def("source_pay") {
-            onIntent(ReadBookIntent.PayAction)
-        },
-        def("edit_source") {
-            onIntent(ReadBookIntent.OpenSourceEdit)
-        },
-        def("disable_source") {
-            onIntent(ReadBookIntent.DisableSource)
         },
     ).associateBy { it.id }
 }
@@ -453,32 +300,8 @@ internal fun buildReadMenuActionDefs(
                 onIntent(ReadBookIntent.HideMenu)
             }
         },
-        def("translate", isActive = state.translationMode) {
-            onIntent(ReadBookIntent.ToggleTranslation)
-        },
         def("refresh_current") {
             onIntent(ReadBookIntent.RefreshCurrentChapter)
-        },
-        def("ai_chat") {
-            onIntent(ReadBookIntent.OpenAiChat)
-        },
-        def("ai_summary") {
-            onIntent(ReadBookIntent.OpenChapterSummary)
-        },
-        def("ai_rewrite") {
-            onIntent(ReadBookIntent.OpenAiCurrentChapterRewrite)
-        },
-        def("multi_role_read", isActive = state.useMultiSpeaker) {
-            onIntent(ReadBookIntent.SetUseMultiSpeaker(!state.useMultiSpeaker))
-        },
-        def("multi_role_cast", isActive = state.multiRoleCast) {
-            onIntent(ReadBookIntent.SetMultiRoleCast(!state.multiRoleCast))
-        },
-        def("cast_table") {
-            onIntent(ReadBookIntent.OpenBookVoiceCasting)
-        },
-        def("ai_cast") {
-            onIntent(ReadBookIntent.OpenAiCastDialog)
         },
         def("more_actions") {
             onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.MoreActions))

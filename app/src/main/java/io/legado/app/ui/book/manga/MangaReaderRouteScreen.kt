@@ -23,13 +23,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
 import io.legado.app.constant.BookType
 import io.legado.app.model.SourceCallBack
-import io.legado.app.receiver.NetworkChangedListener
 import io.legado.app.ui.book.read.sheet.ReaderBookSheetRoute
 import io.legado.app.ui.book.read.sheet.ReaderBookSheetTab
 import io.legado.app.ui.main.AndroidPlatformCapabilities
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.main.readerSharedBounds
-import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.openUrl
 import io.legado.app.utils.share
 import io.legado.app.utils.toggleSystemBar
@@ -67,7 +65,6 @@ fun MangaReaderRouteScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val currentIsTopRoute by rememberUpdatedState(isTopRoute)
-    val networkChangedListener = remember(activity) { NetworkChangedListener(activity) }
 
     LaunchedEffect(viewModel, bookUrl, inBookshelf, chapterChanged, openRequestId) {
         viewModel.onIntent(
@@ -163,15 +160,9 @@ fun MangaReaderRouteScreen(
         }
     }
 
-    DisposableEffect(lifecycleOwner, viewModel, networkChangedListener) {
+    DisposableEffect(lifecycleOwner, viewModel) {
         var hasResumed = false
         fun resumeSession() {
-            networkChangedListener.register()
-            networkChangedListener.onNetworkChanged = {
-                if (NetworkUtils.isAvailable()) {
-                    viewModel.onIntent(MangaReaderIntent.NetworkAvailable)
-                }
-            }
             viewModel.onIntent(MangaReaderIntent.ResumeSession)
             if (hasResumed) viewModel.onIntent(MangaReaderIntent.ReloadContent)
             hasResumed = true
@@ -179,7 +170,6 @@ fun MangaReaderRouteScreen(
 
         fun pauseSession() {
             viewModel.onIntent(MangaReaderIntent.PauseSession)
-            networkChangedListener.unRegister()
         }
 
         val observer = LifecycleEventObserver { _, event ->

@@ -79,9 +79,9 @@ class MainPaneNavigationTest {
         stack.addAll(listOf(MainRouteHome, MainRouteSettings))
         val playerNavigation =
             MainEntryNavigation(MainRouteHome, stack, true, MainNavRouteTracker()) {
-                assertTrue(it is MainRouteAudioPlay)
+                assertTrue(it is MainRouteReadAloudPlayer)
             }
-        playerNavigation.onNavigateToRoute(MainRouteAudioPlay("book"))
+        playerNavigation.onNavigateToRoute(MainRouteReadAloudPlayer)
         assertEquals(listOf(MainRouteHome, MainRouteSettings), stack)
     }
 

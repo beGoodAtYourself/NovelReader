@@ -47,23 +47,24 @@ class FindBookshelfConflictUseCaseTest {
 
     @Test
     fun `same name and author is reported as conflict`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破苍穹", "天蚕土豆")
+        insertShelfBook("file:///old.example/book", "斗破苍穹", "天蚕土豆")
         val incoming =
-            Book(bookUrl = "https://new.example/book", name = "斗破苍穹", author = "天蚕土豆")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = "斗破苍穹", author = "天蚕土豆")
 
         val conflict = useCase.execute(incoming)
 
         assertEquals(
-            listOf("https://old.example/book"),
+            listOf("file:///old.example/book"),
             conflict?.candidates?.map { it.bookUrl },
         )
     }
 
     @Test
     fun `name is matched after trimming and folding whitespace`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破  苍穹 ", "天蚕土豆")
+        insertShelfBook("file:///old.example/book", "斗破  苍穹 ", "天蚕土豆")
         val incoming = Book(
-            bookUrl = "https://new.example/book",
+            type = BookType.text or BookType.local,
+            bookUrl = "file:///new.example/book",
             name = "斗破 苍穹",
             author = "天蚕土豆",
         )
@@ -75,9 +76,9 @@ class FindBookshelfConflictUseCaseTest {
 
     @Test
     fun `blank author on either side is still a conflict`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破苍穹", "")
+        insertShelfBook("file:///old.example/book", "斗破苍穹", "")
         val incoming =
-            Book(bookUrl = "https://new.example/book", name = "斗破苍穹", author = "天蚕土豆")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = "斗破苍穹", author = "天蚕土豆")
 
         val conflict = useCase.execute(incoming)
 
@@ -86,27 +87,27 @@ class FindBookshelfConflictUseCaseTest {
 
     @Test
     fun `different author is not a conflict`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破苍穹", "天蚕土豆")
+        insertShelfBook("file:///old.example/book", "斗破苍穹", "天蚕土豆")
         val incoming =
-            Book(bookUrl = "https://new.example/book", name = "斗破苍穹", author = "其他人")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = "斗破苍穹", author = "其他人")
 
         assertNull(useCase.execute(incoming))
     }
 
     @Test
     fun `different name is not a conflict`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破苍穹", "天蚕土豆")
+        insertShelfBook("file:///old.example/book", "斗破苍穹", "天蚕土豆")
         val incoming =
-            Book(bookUrl = "https://new.example/book", name = "武动乾坤", author = "天蚕土豆")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = "武动乾坤", author = "天蚕土豆")
 
         assertNull(useCase.execute(incoming))
     }
 
     @Test
     fun `the book being added is never its own conflict`() = runBlocking {
-        insertShelfBook("https://old.example/book", "斗破苍穹", "天蚕土豆")
+        insertShelfBook("file:///old.example/book", "斗破苍穹", "天蚕土豆")
         val incoming =
-            Book(bookUrl = "https://old.example/book", name = "斗破苍穹", author = "天蚕土豆")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///old.example/book", name = "斗破苍穹", author = "天蚕土豆")
 
         assertNull(useCase.execute(incoming))
     }
@@ -115,19 +116,19 @@ class FindBookshelfConflictUseCaseTest {
     fun `removed from shelf books are ignored`() = runBlocking {
         database.bookDao.insert(
             Book(
-                bookUrl = "https://preview.example/book",
+                bookUrl = "file:///preview.example/book",
                 name = "斗破苍穹",
                 author = "天蚕土豆",
-                type = BookType.notShelf,
+                type = BookType.notShelf or BookType.local or BookType.text,
             )
         )
         val incoming =
-            Book(bookUrl = "https://new.example/book", name = "斗破苍穹", author = "天蚕土豆")
+            Book(type = BookType.text or BookType.local, bookUrl = "file:///new.example/book", name = "斗破苍穹", author = "天蚕土豆")
 
         assertNull(useCase.execute(incoming))
     }
 
     private suspend fun insertShelfBook(bookUrl: String, name: String, author: String) {
-        database.bookDao.insert(Book(bookUrl = bookUrl, name = name, author = author))
+        database.bookDao.insert(Book(type = BookType.text or BookType.local, bookUrl = bookUrl, name = name, author = author))
     }
 }

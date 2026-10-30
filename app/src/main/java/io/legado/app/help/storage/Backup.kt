@@ -11,8 +11,7 @@ import io.legado.app.data.appDb
 import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.gateway.ReadStyleGateway
 import io.legado.app.exception.NoStackTraceException
-import io.legado.app.help.AppWebDav
-import io.legado.app.help.DirectLinkUpload
+import io.legado.app.utils.ACache
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.LocalConfig
@@ -90,7 +89,7 @@ object Backup {
             "highlightTagRule.json",
             "tagGroupRule.json",
             "servers.json",
-            DirectLinkUpload.ruleFileName,
+            "directLinkUploadRule.json",
             ReadBookConfig.configFileName,
             ReadBookConfig.shareConfigFileName,
             ThemeConfigStore.configFileName,
@@ -120,12 +119,7 @@ object Backup {
             Coroutine.async {
                 BackupRestoreLock.withLock {
                     if (shouldBackup()) {
-                        val backupZipFileName = getNowZipFileName()
-                        if (!AppWebDav.hasBackUp(backupZipFileName)) {
-                            backup(context, backupSettingsGateway.currentSettings.backupPath)
-                        } else {
-                            LocalConfig.lastBackup = System.currentTimeMillis()
-                        }
+                        backup(context, backupSettingsGateway.currentSettings.backupPath)
                     }
                 }
             }.onError {
@@ -244,9 +238,10 @@ object Backup {
                     .writeText(it)
             }
         }
-        DirectLinkUpload.getConfig()?.let {
-            FileUtils.createFileIfNotExist(backupPath + File.separator + DirectLinkUpload.ruleFileName)
-                .writeText(GSON.toJson(it))
+        // 旧备份字段按原始 JSON 保留，不加载上传规则或创建网络客户端。
+        ACache.get(cacheDir = false).getAsString("directLinkUploadRule.json")?.let {
+            FileUtils.createFileIfNotExist(backupPath + File.separator + "directLinkUploadRule.json")
+                .writeText(it)
         }
         if (!BackupConfig.backupIgnoreCoverConfig) {
             BookCover.getConfig()?.let {
@@ -334,26 +329,10 @@ object Backup {
                     }
                 }
             }
-            if (mode == "both" || mode == "webdav") {
-                try {
-                    AppWebDav.backUpWebDav(zipFileName)
-                } catch (e: Exception) {
-                    AppLog.put("上传备份至webdav失败\n$e", e)
-                }
-            }
         }
         FileUtils.delete(backupPath)
         FileUtils.delete(zipFilePath)
         currentCoroutineContext().ensureActive()
-        readStyleGateway.allBackgroundImagePaths().map {
-            if (it.contains(File.separator)) {
-                File(it)
-            } else {
-                appCtx.externalFiles.getFile("bg", it)
-            }
-        }.let {
-            AppWebDav.upBgs(it.toTypedArray())
-        }
     }
 
     private suspend fun writeListToJson(list: List<Any>, fileName: String, path: String) {

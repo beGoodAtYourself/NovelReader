@@ -15,7 +15,6 @@ import io.legado.app.data.repository.BookGroupRepository
 import io.legado.app.data.repository.BookRepository
 import io.legado.app.data.repository.BookSourceRepository
 import io.legado.app.data.repository.BookshelfRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.domain.gateway.BookshelfSettingsGateway
 import io.legado.app.domain.gateway.DownloadCacheSettingsGateway
@@ -40,7 +39,6 @@ import io.legado.app.model.SourceCallBack
 import io.legado.app.service.CacheBookService
 import io.legado.app.ui.config.themeConfig.TagColorPair
 import io.legado.app.utils.GSON
-import io.legado.app.utils.eventBus.FlowEventBus
 import io.legado.app.utils.move
 import io.legado.app.utils.onEachParallel
 import io.legado.app.utils.postEvent
@@ -89,7 +87,6 @@ class BookshelfViewModel(
     private val bookGroupRepository: BookGroupRepository,
     private val bookSourceRepository: BookSourceRepository,
     private val bookshelfRepository: BookshelfRepository,
-    private val uploadRepository: UploadRepository,
     private val batchCacheDownloadUseCase: BatchCacheDownloadUseCase,
     private val updateBooksGroupUseCase: UpdateBooksGroupUseCase,
     private val refreshTocUseCase: RefreshTocUseCase,
@@ -754,11 +751,6 @@ class BookshelfViewModel(
             isInitialLoadingFlow.value = false
         }
         viewModelScope.launch {
-            FlowEventBus.with<Unit>(EventBus.UP_ALL_BOOK_TOC).collect {
-                upAllBookToc()
-            }
-        }
-        viewModelScope.launch {
             bookshelfSettings.collect { settings ->
                 if (groupIdFlow.value != settings.saveTabPosition) {
                     groupIdFlow.value = settings.saveTabPosition
@@ -781,13 +773,6 @@ class BookshelfViewModel(
             }
         }
 
-        viewModelScope.launch {
-            isInitialLoadingFlow.filter { !it }.collect {
-                if (bookshelfSettings.value.autoRefreshBook) {
-                    upAllBookToc()
-                }
-            }
-        }
     }
 
     fun onIntent(intent: BookshelfIntent) {
@@ -816,7 +801,7 @@ class BookshelfViewModel(
             is BookshelfIntent.RefreshToc -> upToc(intent.books)
             is BookshelfIntent.AddBookByUrl -> addBookByUrl(intent.urls)
             is BookshelfIntent.ExportToUri -> exportToUri(intent.uri, intent.books)
-            is BookshelfIntent.UploadBookshelf -> uploadBookshelf(intent.books)
+            is BookshelfIntent.UploadBookshelf -> Unit
             is BookshelfIntent.ImportFromUri -> importBookshelf(intent.uri, intent.groupId)
             is BookshelfIntent.UpdateSetting -> viewModelScope.launch {
                 bookshelfSettingsGateway.update(intent.transform)
@@ -1358,25 +1343,6 @@ class BookshelfViewModel(
             _effects.tryEmit(BookshelfEffect.ShowSnackbar("导出成功"))
         }.onError {
             _effects.tryEmit(BookshelfEffect.ShowSnackbar("导出失败\n${it.localizedMessage}"))
-        }
-    }
-
-    fun uploadBookshelf(items: List<BookUiItem>) {
-        execute {
-            val json = exportBookshelfUseCase.exportToJson(items).getOrThrow()
-            uploadRepository.upload(
-                fileName = "bookshelf.json",
-                file = json,
-                contentType = "application/json"
-            )
-        }.onSuccess { url ->
-            pendingUploadUrlFlow.value = url
-        }.onError {
-            _effects.tryEmit(
-                BookshelfEffect.ShowSnackbar(
-                    message = "上传失败: ${it.localizedMessage}"
-                )
-            )
         }
     }
 

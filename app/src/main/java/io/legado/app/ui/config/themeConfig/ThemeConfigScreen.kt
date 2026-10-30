@@ -405,7 +405,7 @@ fun ThemeConfigScreen(
                         }
                     )
                     DropdownListSettingItem(
-                        title = stringResource(R.string.book_info_network_cover_background),
+                        title = stringResource(R.string.feature_local_custom_cover_background),
                         selectedValue = theme.bookInfoNetworkCoverBackground,
                         displayEntries = stringArrayResource(R.array.book_info_background_blur_entries),
                         entryValues = stringArrayResource(R.array.book_info_background_blur_values),
@@ -420,14 +420,6 @@ fun ThemeConfigScreen(
                         entryValues = stringArrayResource(R.array.book_info_background_blur_values),
                         onValueChange = { value ->
                             updateTheme { it.copy(bookInfoDefaultCoverBackground = value) }
-                        }
-                    )
-                    SwitchSettingItem(
-                        title = stringResource(R.string.book_info_author_search_fallback),
-                        description = stringResource(R.string.book_info_author_search_fallback_summary),
-                        checked = theme.bookInfoAuthorSearchFallback,
-                        onCheckedChange = { value ->
-                            updateTheme { it.copy(bookInfoAuthorSearchFallback = value) }
                         }
                     )
                 }

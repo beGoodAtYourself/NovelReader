@@ -1,6 +1,5 @@
 package io.legado.app.ui.association
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +23,6 @@ import io.legado.app.exception.InvalidBooksDirException
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.permission.Permissions
 import io.legado.app.lib.permission.PermissionsCompat
-import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.progressIndicator.AppCircularProgressIndicator
 import io.legado.app.utils.FileUtils
@@ -37,7 +35,6 @@ import io.legado.app.utils.getFile
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.readUri
 import io.legado.app.utils.showDialogFragment
-import io.legado.app.utils.startActivity
 import io.legado.app.utils.startActivityForBook
 import io.legado.app.utils.takePersistablePermissionSafely
 import io.legado.app.utils.toastOnUi
@@ -97,24 +94,15 @@ class FileAssociationActivity : BaseComposeActivity(transparent = true) {
         viewModel.importBookLiveData.observe(this) { uri ->
             importBook(uri)
         }
-        viewModel.onLineImportLive.observe(this) {
-            startActivity<OnLineImportActivity> {
-                data = it
-            }
-            finish()
-        }
         viewModel.successLive.observe(this) {
             when (it.first) {
-                "bookSource" -> {
-                    startActivity(MainActivity.createBookSourceManageIntent(this, it.second))
-                    finish()
-                }
-                "rssSource" -> showDialogFragment(ImportRssSourceDialog(it.second, true))
                 "replaceRule" -> showDialogFragment(ImportReplaceRuleDialog(it.second, true))
-                "httpTts" -> showDialogFragment(ImportHttpTtsDialog(it.second, true))
                 "theme" -> showDialogFragment(ImportThemeDialog(it.second, true))
                 "txtRule" -> showDialogFragment(ImportTxtTocRuleDialog(it.second, true))
-                "dictRule" -> showDialogFragment(ImportDictRuleDialog(it.second, true))
+                else -> {
+                    toastOnUi(R.string.local_reader_only)
+                    finish()
+                }
             }
         }
         viewModel.errorLive.observe(this) {
@@ -147,6 +135,11 @@ class FileAssociationActivity : BaseComposeActivity(transparent = true) {
             }
         }
         intent.data?.let { data ->
+            if (data.scheme !in listOf("file", "content")) {
+                toastOnUi(R.string.local_reader_only)
+                finish()
+                return@let
+            }
             if (data.isContentScheme() && data.canRead()) {
                 viewModel.dispatchIntent(data)
             } else {

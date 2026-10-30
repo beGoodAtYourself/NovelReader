@@ -34,7 +34,7 @@ sealed class MainDestination(
     )
 
     companion object {
-        val mainDestinations = persistentListOf<MainDestination>(Home, Bookshelf, Explore, Rss, My)
+        val mainDestinations by lazy { persistentListOf<MainDestination>(Bookshelf, My) }
 
         fun ordered(order: String): List<MainDestination> {
             val byRoute = mainDestinations.associateBy { it.route }

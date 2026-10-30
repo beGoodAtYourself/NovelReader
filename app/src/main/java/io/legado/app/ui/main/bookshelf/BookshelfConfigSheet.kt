@@ -614,16 +614,6 @@ fun BookshelfConfigSheet(
             PillHeaderDivider(title = stringResource(R.string.other))
 
             CompactSwitchSettingItem(
-                title = stringResource(R.string.search_filter_first),
-                description = stringResource(R.string.bookshelf_search_button_hint),
-                checked = settings.bookshelfSearchActionDirectToSearch,
-                color = LegadoTheme.colorScheme.surface,
-                onCheckedChange = { value ->
-                    onUpdate { it.copy(bookshelfSearchActionDirectToSearch = value) }
-                }
-            )
-
-            CompactSwitchSettingItem(
                 title = stringResource(R.string.show_bookshelf_fast_scroller),
                 checked = settings.showBookshelfFastScroller,
                 color = LegadoTheme.colorScheme.surface,
@@ -638,17 +628,6 @@ fun BookshelfConfigSheet(
                 color = LegadoTheme.colorScheme.surface,
                 onCheckedChange = { value ->
                     onUpdate { it.copy(shouldShowExpandButton = value) }
-                }
-            )
-
-            CompactSliderSettingItem(
-                title = stringResource(R.string.bookshelf_update_limit),
-                description = if (settings.bookshelfRefreshingLimit <= 0) stringResource(R.string.refresh_limit_unlimited) else stringResource(R.string.refresh_limit_books, settings.bookshelfRefreshingLimit),
-                value = settings.bookshelfRefreshingLimit.toFloat(),
-                valueRange = 0f..100f,
-                steps = 100,
-                onValueChange = { value ->
-                    onUpdate { it.copy(bookshelfRefreshingLimit = value.toInt()) }
                 }
             )
 

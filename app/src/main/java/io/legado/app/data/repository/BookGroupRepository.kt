@@ -3,19 +3,26 @@ package io.legado.app.data.repository
 import io.legado.app.data.dao.BookGroupDao
 import io.legado.app.data.entities.BookGroup
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class BookGroupRepository(private val bookGroupDao: BookGroupDao) {
 
     fun flowAll(): Flow<List<BookGroup>> {
-        return bookGroupDao.flowAll()
+        return bookGroupDao.flowAll().map { groups ->
+            groups.filterNot { it.groupId in setOf(BookGroup.IdNetNone, BookGroup.IdAudio) }
+        }
     }
 
     fun flowSelect(): Flow<List<BookGroup>> {
-        return bookGroupDao.flowSelect()
+        return bookGroupDao.flowSelect().map { groups ->
+            groups.filterNot { it.groupId in setOf(BookGroup.IdNetNone, BookGroup.IdAudio) }
+        }
     }
 
     fun flowShow(): Flow<List<BookGroup>> {
-        return bookGroupDao.flowShow()
+        return bookGroupDao.flowShow().map { groups ->
+            groups.filterNot { it.groupId in setOf(BookGroup.IdNetNone, BookGroup.IdAudio) }
+        }
     }
 
     suspend fun update(vararg bookGroup: BookGroup) {

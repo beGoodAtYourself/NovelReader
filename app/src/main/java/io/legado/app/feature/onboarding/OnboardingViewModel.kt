@@ -6,19 +6,14 @@ import androidx.core.net.toUri
 import io.legado.app.R
 import io.legado.app.constant.AppLog
 import io.legado.app.domain.gateway.AppShellSettingsGateway
-import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.gateway.OtherSettingsGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
-import io.legado.app.domain.usecase.WebDavBackupUseCase
-import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.storage.Restore
 import io.legado.app.utils.toastOnUi
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -32,15 +27,10 @@ class OnboardingViewModel(
     private val themeSettingsGateway: ThemeSettingsGateway,
     private val appShellSettingsGateway: AppShellSettingsGateway,
     private val otherSettingsGateway: OtherSettingsGateway,
-    private val backupSettingsGateway: BackupSettingsGateway,
-    private val webDavBackupUseCase: WebDavBackupUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         OnboardingUiState(
-            webDavUrl = backupSettingsGateway.currentSettings.webDavUrl,
-            webDavAccount = backupSettingsGateway.currentSettings.webDavAccount,
-            webDavPassword = backupSettingsGateway.currentSettings.webDavPassword,
             appAccessPassword = LocalConfig.password ?: "",
             bookFolderUri = otherSettingsGateway.currentSettings.defaultBookTreeUri,
             theme = themeSettingsGateway.currentSettings,
@@ -77,33 +67,10 @@ class OnboardingViewModel(
         when (intent) {
             OnboardingIntent.Next -> nextPage()
             OnboardingIntent.Prev -> previousPage()
-            is OnboardingIntent.UpdateWebDavUrl ->
-                _uiState.update { it.copy(webDavUrl = intent.value) }
-            is OnboardingIntent.UpdateWebDavAccount ->
-                _uiState.update { it.copy(webDavAccount = intent.value) }
-            is OnboardingIntent.UpdateWebDavPassword ->
-                _uiState.update { it.copy(webDavPassword = intent.value) }
             is OnboardingIntent.UpdateAppAccessPassword -> {
                 LocalConfig.password = intent.value
                 _uiState.update { it.copy(appAccessPassword = intent.value) }
             }
-            OnboardingIntent.SaveAndTestWebDav -> viewModelScope.launch {
-                saveWebDavConfig()
-                runCatching { webDavBackupUseCase.test() }
-                    .onFailure {
-                        AppLog.put("WebDav测试连接出错\n${it.localizedMessage}", it)
-                        appCtx.toastOnUi(
-                            appCtx.getString(
-                                R.string.onboarding_webdav_test_error,
-                                it.localizedMessage ?: ""
-                            )
-                        )
-                    }
-            }
-            OnboardingIntent.FetchBackups -> fetchBackups()
-            is OnboardingIntent.RestoreBackup -> restoreWebDav(intent.name)
-            OnboardingIntent.DismissBackupSelector ->
-                _uiState.update { it.copy(backupNames = null) }
             OnboardingIntent.StartLocalRestore -> {
                 _uiState.update { it.copy(restoreErrorMessage = null) }
                 _effects.tryEmit(OnboardingEffect.OpenRestoreFilePicker)
@@ -150,81 +117,6 @@ class OnboardingViewModel(
             _uiState.update { it.copy(page = it.page - 1) }
         } else {
             _effects.tryEmit(OnboardingEffect.Finish)
-        }
-    }
-
-    private suspend fun saveWebDavConfig() {
-        val state = _uiState.value
-        backupSettingsGateway.update {
-            it.copy(
-                webDavUrl = state.webDavUrl,
-                webDavAccount = state.webDavAccount,
-                webDavPassword = state.webDavPassword,
-            )
-        }
-    }
-
-    private fun fetchBackups() {
-        busyJob?.cancel()
-        busyJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(busyText = appCtx.getString(R.string.loading), backupNames = null)
-            }
-            try {
-                saveWebDavConfig()
-                webDavBackupUseCase.refreshConfig()
-                val names = webDavBackupUseCase.getBackupNames()
-                if (webDavBackupUseCase.isJianGuoYun && names.size > 700) {
-                    appCtx.toastOnUi(R.string.onboarding_jianguoyun_limit)
-                }
-                if (names.isEmpty()) {
-                    throw NoStackTraceException("Web dav no back up file")
-                }
-                ensureActive()
-                _uiState.update {
-                    it.copy(busyText = null, backupNames = names.toImmutableList())
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                AppLog.put("恢复备份出错WebDavError\n${e.localizedMessage}", e)
-                _uiState.update {
-                    it.copy(
-                        busyText = null,
-                        restoreErrorMessage = appCtx.getString(
-                            R.string.onboarding_restore_error_dialog,
-                            e.localizedMessage ?: ""
-                        ),
-                    )
-                }
-            }
-        }
-    }
-
-    private fun restoreWebDav(name: String) {
-        busyJob?.cancel()
-        busyJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    backupNames = null,
-                    busyText = appCtx.getString(R.string.onboarding_restoring)
-                )
-            }
-            try {
-                webDavBackupUseCase.restore(name)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                AppLog.put("WebDav恢复出错\n${e.localizedMessage}", e)
-                appCtx.toastOnUi(
-                    appCtx.getString(
-                        R.string.onboarding_webdav_restore_error,
-                        e.localizedMessage ?: ""
-                    )
-                )
-            } finally {
-                _uiState.update { it.copy(busyText = null) }
-            }
         }
     }
 

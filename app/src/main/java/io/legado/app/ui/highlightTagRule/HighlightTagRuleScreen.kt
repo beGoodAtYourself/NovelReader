@@ -43,7 +43,6 @@ import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.importComponents.BatchImportDialog
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
-import io.legado.app.ui.widget.components.importComponents.SourceInputDialog
 import io.legado.app.ui.widget.components.lazylist.FastScrollLazyColumn
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.rules.RuleListScaffold
@@ -95,7 +94,6 @@ fun HighlightTagRuleScreen(
     var showEditSheet by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<HighlightTagRule?>(null) }
     var showDeleteRuleDialog by remember { mutableStateOf<HighlightTagRule?>(null) }
-    var showUrlInput by remember { mutableStateOf(false) }
 
     var showImportSheet by remember { mutableStateOf(false) }
     var showExportSheet by remember { mutableStateOf(false) }
@@ -161,16 +159,6 @@ fun HighlightTagRuleScreen(
         }
     )
 
-    SourceInputDialog(
-        show = showUrlInput,
-        title = stringResource(R.string.import_on_line),
-        onDismissRequest = { showUrlInput = false },
-        onConfirm = {
-            showUrlInput = false
-            onIntent(HighlightTagRuleIntent.ImportSource(it))
-        }
-    )
-
     FilePickerSheet(
         show = showExportSheet,
         onDismissRequest = { showExportSheet = false },
@@ -178,10 +166,6 @@ fun HighlightTagRuleScreen(
         onSelectSysDir = {
             showExportSheet = false
             exportDoc.launch("exportHighlightTagRule.json")
-        },
-        onUpload = {
-            showExportSheet = false
-            onIntent(HighlightTagRuleIntent.UploadSelection)
         },
         allowExtensions = arrayOf("json")
     )
@@ -193,10 +177,6 @@ fun HighlightTagRuleScreen(
         title = stringResource(R.string.import_highlight_tag_rule),
         onSelectSysFile = { types ->
             importDoc.launch(types)
-            showImportSheet = false
-        },
-        onManualInput = {
-            showUrlInput = true
             showImportSheet = false
         },
         allowExtensions = arrayOf("json", "txt")

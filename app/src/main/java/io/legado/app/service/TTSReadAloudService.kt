@@ -164,10 +164,16 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         if (status == TextToSpeech.SUCCESS) {
             textToSpeech?.let {
                 it.setOnUtteranceProgressListener(ttsUtteranceListener)
-                // 新初始化的引擎就停在它自己的默认音色上
-                activeVoiceName = ""
-                voiceIsDefault = true
+                // 只使用明确声明无需网络的音色，避免系统引擎代为联网。
                 voiceCatalogCache = null
+                val offlineVoice = offlineDefaultVoice()
+                if (offlineVoice == null || it.setVoice(offlineVoice) != TextToSpeech.SUCCESS) {
+                    toastOnUi(R.string.local_reader_no_offline_voice)
+                    stopSelf()
+                    return
+                }
+                activeVoiceName = offlineVoice.name
+                voiceIsDefault = true
                 appliedSpeechRate = -1f
                 appliedPitch = -1f
                 ttsInitFinish = true
@@ -442,10 +448,10 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         return false
     }
 
-    /** 退回引擎默认音色（setVoice(null) 就是「用引擎自己的默认」，不依赖它报不报得出名字）。 */
+    /** 退回已安装的离线音色，不允许引擎自行选择联网音色。 */
     private fun restoreDefaultVoice(tts: TextToSpeech): Boolean {
         if (voiceIsDefault && activeVoiceName.isEmpty()) return false
-        if (tts.setVoice(null) == TextToSpeech.SUCCESS) {
+        if (tts.setVoice(offlineDefaultVoice() ?: return false) == TextToSpeech.SUCCESS) {
             voiceIsDefault = true
             activeVoiceName = ""
             return true
@@ -455,10 +461,18 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
     }
 
     /** 引擎音色表：只在引擎实例变化后枚举一次。 */
+    private fun offlineDefaultVoice(): Voice? {
+        val defaultVoice = textToSpeech?.defaultVoice
+        if (defaultVoice != null && !defaultVoice.isNetworkConnectionRequired) return defaultVoice
+        val voices = voiceCatalog()
+        return voices.firstOrNull { it.locale.language == java.util.Locale.getDefault().language }
+            ?: voices.firstOrNull()
+    }
+
     private fun voiceCatalog(): Set<Voice> {
         voiceCatalogCache?.let { return it }
         val tts = textToSpeech ?: return emptySet()
-        val catalog = runCatching { tts.voices }.getOrNull().orEmpty()
+        val catalog = runCatching { tts.voices }.getOrNull().orEmpty().filterNot { it.isNetworkConnectionRequired }.toSet()
         if (catalog.isEmpty()) return emptySet()
         voiceCatalogCache = catalog
         return catalog

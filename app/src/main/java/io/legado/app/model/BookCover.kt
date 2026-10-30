@@ -19,26 +19,20 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.target.Target.SIZE_ORIGINAL
 import io.legado.app.R
-import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
 import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.domain.gateway.CoverSettingsGateway
 import io.legado.app.domain.gateway.MangaSettingsGateway
 import io.legado.app.help.CacheManager
-import io.legado.app.help.DefaultData
 import io.legado.app.help.glide.BlurTransformation
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.help.glide.OkHttpModelLoader
-import io.legado.app.model.analyzeRule.AnalyzeRule
-import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
-import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.domain.usecase.CoverAlbumUseCase
 import io.legado.app.utils.BitmapUtils
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.isNightMode
 import io.legado.app.utils.sysConfiguration
-import kotlinx.coroutines.currentCoroutineContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import splitties.init.appCtx
@@ -239,46 +233,13 @@ object BookCover : KoinComponent {
             .thumbnail(loadBlur)
     }
 
-    fun getCoverRule(): CoverRule {
-        return getConfig() ?: DefaultData.coverRule
-    }
-
     fun getConfig(): CoverRule? {
         return GSON.fromJsonObject<CoverRule>(CacheManager.get(coverRuleConfigKey))
             .getOrNull()
     }
 
-    suspend fun searchCover(book: Book): String? {
-        val config = getCoverRule()
-        if (!config.enable || config.searchUrl.isBlank() || config.coverRule.isBlank()) {
-            return null
-        }
-        val analyzeUrl = AnalyzeUrl(
-            config.searchUrl,
-            book.name,
-            source = config,
-            coroutineContext = currentCoroutineContext(),
-            hasLoginHeader = false
-        )
-        val res = analyzeUrl.getStrResponseAwait()
-        val analyzeRule = AnalyzeRule(book)
-        analyzeRule.setCoroutineContext(currentCoroutineContext())
-        analyzeRule.setContent(res.body)
-        analyzeRule.setRedirectUrl(res.url)
-        return analyzeRule.getString(config.coverRule, isUrl = true)
-    }
-
-    fun saveCoverRule(config: CoverRule) {
-        val json = GSON.toJson(config)
-        saveCoverRule(json)
-    }
-
     fun saveCoverRule(json: String) {
         CacheManager.put(coverRuleConfigKey, json)
-    }
-
-    fun delCoverRule() {
-        CacheManager.delete(coverRuleConfigKey)
     }
 
     @Keep
@@ -286,21 +247,14 @@ object BookCover : KoinComponent {
         var enable: Boolean = true,
         var searchUrl: String,
         var coverRule: String,
-        override var concurrentRate: String? = null,
-        override var loginUrl: String? = null,
-        override var loginUi: String? = null,
-        override var header: String? = null,
-        override var jsLib: String? = null,
-        override var enabledCookieJar: Boolean? = false,
-    ) : BaseSource {
+        var concurrentRate: String? = null,
+        var loginUrl: String? = null,
+        var loginUi: String? = null,
+        var header: String? = null,
+        var jsLib: String? = null,
+        var enabledCookieJar: Boolean? = false,
+    ) {
 
-        override fun getTag(): String {
-            return searchUrl
-        }
-
-        override fun getKey(): String {
-            return searchUrl
-        }
     }
 
 }

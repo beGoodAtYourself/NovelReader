@@ -667,10 +667,6 @@ private fun ReaderBookTocPage(
     val selectAllText = stringResource(R.string.select_all)
     val invertText = stringResource(R.string.invert_selection)
     val bookmarkText = stringResource(R.string.bookmark_add)
-    val downloadSelectedText = stringResource(
-        R.string.download_selected_count,
-        action.selectedIds.size,
-    )
     val cancelText = stringResource(R.string.cancel)
     val deleteAssignmentText = stringResource(R.string.cast_assignment_delete)
     val deleteAudioText = stringResource(R.string.read_aloud_audio_download_delete)
@@ -680,7 +676,6 @@ private fun ReaderBookTocPage(
         selectAllText,
         invertText,
         bookmarkText,
-        downloadSelectedText,
         deleteAssignmentText,
         deleteAudioText,
         cancelText,
@@ -694,9 +689,6 @@ private fun ReaderBookTocPage(
             },
             FabMenuItem(Icons.Default.BookmarkAdd, bookmarkText) {
                 onIntent(TocIntent.AddBookmarksForSelected)
-            },
-            FabMenuItem(Icons.Default.Download, downloadSelectedText) {
-                onIntent(TocIntent.DownloadSelected)
             },
             FabMenuItem(Icons.Default.Groups, deleteAssignmentText) {
                 onIntent(TocIntent.DeleteAssignmentsForSelected)
@@ -1066,7 +1058,7 @@ private fun ReaderSheetStatusIcon(
 }
 
 @Composable
-private fun ReaderBookTocMenu(
+internal fun ReaderBookTocMenu(
     state: TocUiState,
     onIntent: (TocIntent) -> Unit,
     onDismiss: () -> Unit,
@@ -1077,10 +1069,6 @@ private fun ReaderBookTocMenu(
         onDismiss()
         onIntent(intent)
     }
-    RoundDropdownMenuItem(
-        text = stringResource(R.string.download_all),
-        onClick = { dispatch(TocIntent.DownloadAll) },
-    )
     if (state.action.items.any { it.isVolume }) {
         RoundDropdownMenuItem(
             text = stringResource(R.string.expand_volume),

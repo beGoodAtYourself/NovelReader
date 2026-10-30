@@ -1,6 +1,7 @@
 package io.legado.app.data.dao
 
 import androidx.room.Room
+import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.SearchBook
@@ -33,9 +34,9 @@ class BookPrivateAccessQueryTest {
     private val privateGroupId = 0b100L
     private val publicGroupId = 0b1000L
 
-    private val privateGroupBook = "http://example.com/book/private-group"
-    private val publicGroupBook = "http://example.com/book/public-group"
-    private val markedBook = "http://example.com/book/marked"
+    private val privateGroupBook = "file:///example.com/book/private-group"
+    private val publicGroupBook = "file:///example.com/book/public-group"
+    private val markedBook = "file:///example.com/book/marked"
 
     @Before
     fun setUp() {
@@ -123,10 +124,11 @@ class BookPrivateAccessQueryTest {
 
     private fun newBook(url: String, group: Long) = SearchBook(
         bookUrl = url,
-        origin = "http://example.com",
+        origin = "file:///example.com",
         name = "书-$url",
         author = "作者"
     ).toBook().apply {
+        type = type or BookType.local
         this.group = group
     }
 }

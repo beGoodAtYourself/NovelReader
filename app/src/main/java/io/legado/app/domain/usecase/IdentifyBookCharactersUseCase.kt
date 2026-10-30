@@ -23,7 +23,7 @@ import kotlin.uuid.Uuid
 
 class IdentifyBookCharactersUseCase(
     private val aiProfileGateway: AiProfileGateway,
-    private val aiToolAwareGenerationUseCase: AiToolAwareGenerationUseCase,
+    private val aiToolAwareGenerationUseCase: AiGenerationUseCase,
     private val aiArtifactGateway: AiArtifactGateway,
     private val aiTaskManager: AiTaskManager,
     private val bookKnowledgeGateway: BookKnowledgeGateway,
@@ -80,7 +80,7 @@ class IdentifyBookCharactersUseCase(
         val now = System.currentTimeMillis()
         val contentHash = MD5Utils.md5Encode(bookUrl)
         val promptHash =
-            MD5Utils.md5Encode(prompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION)
+            MD5Utils.md5Encode(prompt + AiGenerationUseCase.CACHE_PROMPT_VERSION)
         val artifact = AiArtifact(
             id = "${contentHash}_${AiTaskType.IDENTIFY_CHARACTERS}_${promptHash}_${preset.model.id}",
             taskType = AiTaskType.IDENTIFY_CHARACTERS,
@@ -172,7 +172,7 @@ class IdentifyBookCharactersUseCase(
         val now = System.currentTimeMillis()
         val contentHash = MD5Utils.md5Encode(bookUrl)
         val promptHash =
-            MD5Utils.md5Encode(prompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION)
+            MD5Utils.md5Encode(prompt + AiGenerationUseCase.CACHE_PROMPT_VERSION)
         aiArtifactGateway.upsertArtifact(
             AiArtifact(
                 id = "${contentHash}_${AiTaskType.IDENTIFY_CHARACTERS}_${promptHash}_${preset.model.id}",

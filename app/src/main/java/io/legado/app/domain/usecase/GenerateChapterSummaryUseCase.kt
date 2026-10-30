@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 
 class GenerateChapterSummaryUseCase(
     private val aiProfileGateway: AiProfileGateway,
-    private val aiToolAwareGenerationUseCase: AiToolAwareGenerationUseCase,
+    private val aiToolAwareGenerationUseCase: AiGenerationUseCase,
     private val aiArtifactGateway: AiArtifactGateway,
     private val aiTaskManager: AiTaskManager,
 ) {
@@ -54,7 +54,7 @@ class GenerateChapterSummaryUseCase(
         val preset = resolvePreset() ?: error("No AI model configured for chapter summary")
         val contentHash = MD5Utils.md5Encode(content)
         val promptHash = MD5Utils.md5Encode(
-            preset.promptTemplate + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION,
+            preset.promptTemplate + AiGenerationUseCase.CACHE_PROMPT_VERSION,
         )
         val now = System.currentTimeMillis()
         val artifact = AiArtifact(
@@ -100,7 +100,7 @@ class GenerateChapterSummaryUseCase(
             val preset = resolvePreset() ?: error("No AI model configured for chapter summary")
             val contentHash = MD5Utils.md5Encode(content)
             val promptHash = MD5Utils.md5Encode(
-                preset.promptTemplate + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+                preset.promptTemplate + AiGenerationUseCase.CACHE_PROMPT_VERSION
             )
             aiArtifactGateway.getCachedArtifact(
                 bookUrl = book.bookUrl,
@@ -167,7 +167,7 @@ class GenerateChapterSummaryUseCase(
         val preset = resolvePreset() ?: error("No AI model configured for chapter summary")
         val contentHash = MD5Utils.md5Encode(content)
         val promptHash = MD5Utils.md5Encode(
-            preset.promptTemplate + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+            preset.promptTemplate + AiGenerationUseCase.CACHE_PROMPT_VERSION
         )
         aiArtifactGateway.getCachedArtifact(
             bookUrl = book.bookUrl,

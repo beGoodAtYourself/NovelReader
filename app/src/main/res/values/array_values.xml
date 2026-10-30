@@ -156,10 +156,4 @@
         <item>High</item>
     </string-array>
 
-    <string-array name="backup_sync_mode_value">
-        <item>both</item>
-        <item>local</item>
-        <item>webdav</item>
-    </string-array>
-
 </resources>

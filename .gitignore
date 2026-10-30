@@ -26,3 +26,6 @@ __pycache__/
 hs_err_pid*.log
 replay_pid*.log
 *.hprof
+
+# 本机构建环境、缓存和签名配置
+.local-build/

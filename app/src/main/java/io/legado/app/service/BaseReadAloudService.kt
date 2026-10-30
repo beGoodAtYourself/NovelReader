@@ -389,7 +389,6 @@ abstract class BaseReadAloudService : BaseService(),
         androidMediaControlEnabled = false
         mediaSessionCompat.isActive = false
         mediaSessionCompat.release()
-        bookSession.uploadProgress()
         unregisterPhoneStateListener(phoneStateListener)
         bookSession.finishReadTime()
         upNotificationJob?.invokeOnCompletion {
@@ -764,7 +763,6 @@ abstract class BaseReadAloudService : BaseService(),
         upMediaSessionPlaybackState(PlaybackStateCompat.STATE_PAUSED)
         sessionStore.setStatus(ReadAloudSessionStatus.Paused)
         postEvent(EventBus.ALOUD_STATE, Status.PAUSE)
-        bookSession.uploadProgress()
         doDs()
         bookSession.finishReadTime()
     }

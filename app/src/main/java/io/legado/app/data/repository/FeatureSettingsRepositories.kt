@@ -159,7 +159,7 @@ internal fun Preferences.toDownloadCacheSettings(): DownloadCacheSettings =
         userAgent = compatDsString(PreferKey.userAgent).orEmpty().ifBlank {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/${BuildConfig.Cronet_Main_Version} Safari/537.36"
+                "Chrome/128.0.0.0 Safari/537.36"
         },
         cronetEnabled = compatDsBoolean(PreferKey.cronet) ?: false,
     )
@@ -254,16 +254,16 @@ internal fun TranslationSettings.toPrefMap(): Map<String, Any?> = mapOf(
 )
 
 internal fun Preferences.toBackupSettings(): BackupSettings = BackupSettings(
-    webDavUrl = compatDsString(PreferKey.webDavUrl).orEmpty(),
-    webDavAccount = compatDsString(PreferKey.webDavAccount).orEmpty(),
-    webDavPassword = compatDsString(PreferKey.webDavPassword).orEmpty(),
-    webDavDir = compatDsString(PreferKey.webDavDir) ?: "legado",
-    webDavDeviceName = compatDsString(PreferKey.webDavDeviceName).orEmpty(),
-    syncBookProgress = compatDsBoolean(PreferKey.syncBookProgress) ?: true,
-    syncBookProgressPlus = compatDsBoolean(PreferKey.syncBookProgressPlus) ?: false,
-    autoCheckNewBackup = compatDsBoolean(PreferKey.autoCheckNewBackup) ?: true,
+    webDavUrl = "",
+    webDavAccount = "",
+    webDavPassword = "",
+    webDavDir = "",
+    webDavDeviceName = "",
+    syncBookProgress = false,
+    syncBookProgressPlus = false,
+    autoCheckNewBackup = false,
     onlyLatestBackup = compatDsBoolean(PreferKey.onlyLatestBackup) ?: true,
-    backupSyncMode = compatDsString(PreferKey.backupSyncMode) ?: "both",
+    backupSyncMode = "local",
     backupPath = compatDsString(PreferKey.backupPath),
 )
 
@@ -400,8 +400,7 @@ internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(
         compatDsString(PreferKey.bookInfoNetworkCoverBackground) ?: "on",
     bookInfoDefaultCoverBackground =
         compatDsString(PreferKey.bookInfoDefaultCoverBackground) ?: "on",
-    bookInfoAuthorSearchFallback =
-        compatDsBoolean(PreferKey.bookInfoAuthorSearchFallback) ?: false,
+    bookInfoAuthorSearchFallback = false,
     bookInfoInputColor = compatDsInt(PreferKey.bookInfoInputColor) ?: 0,
     backgroundImageLight = compatDsString(PreferKey.bgImage),
     backgroundImageDark = compatDsString(PreferKey.bgImageN),
@@ -513,20 +512,20 @@ internal fun Preferences.toOtherSettings(): OtherSettings {
     val rawSourceEditMaxLine = compatDsInt(PreferKey.sourceEditMaxLine) ?: Int.MAX_VALUE
     return OtherSettings(
         updateToVariant = compatDsString(PreferKey.updateToVariant) ?: "official_version",
-        autoCheckUpdateOnStart = compatDsBoolean(PreferKey.autoCheckUpdateOnStart) ?: false,
-        webServiceAutoStart = compatDsBoolean(PreferKey.webServiceAutoStart) ?: false,
-        autoRefresh = compatDsBoolean(PreferKey.autoRefresh) ?: false,
+        autoCheckUpdateOnStart = false,
+        webServiceAutoStart = false,
+        autoRefresh = false,
         defaultToRead = compatDsBoolean(PreferKey.defaultToRead) ?: false,
         notificationsPost = compatDsBoolean(PreferKey.notificationsPost) ?: true,
         ignoreBatteryPermission = compatDsBoolean(PreferKey.ignoreBatteryPermission) ?: true,
-        firebaseEnable = compatDsBoolean(PreferKey.firebaseEnable) ?: true,
+        firebaseEnable = false,
         defaultBookTreeUri = compatDsString(PreferKey.defaultBookTreeUri),
         antiAlias = compatDsBoolean(PreferKey.antiAlias) ?: false,
         replaceEnableDefault = compatDsBoolean(PreferKey.replaceEnableDefault) ?: true,
         autoClearExpired = compatDsBoolean(PreferKey.autoClearExpired) ?: true,
         showAddToShelfAlert = compatDsBoolean(PreferKey.showAddToShelfAlert) ?: true,
         showMangaUi = compatDsBoolean(PreferKey.showMangaUi) ?: true,
-        webServiceWakeLock = compatDsBoolean(PreferKey.webServiceWakeLock) ?: false,
+        webServiceWakeLock = false,
         sourceEditMaxLine = rawSourceEditMaxLine.takeIf { it >= 10 } ?: Int.MAX_VALUE,
         webPort = compatDsInt(PreferKey.webPort) ?: 1122,
         processText = compatDsBoolean(PreferKey.processText) ?: true,

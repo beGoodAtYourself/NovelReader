@@ -39,7 +39,6 @@ import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.button.series.SmallTonalButton
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.importComponents.BatchImportDialog
-import io.legado.app.ui.widget.components.importComponents.SourceInputDialog
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenu
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
@@ -58,7 +57,6 @@ fun HighlightRuleConfigSheet(
     onIntent: (ReadBookIntent) -> Unit,
 ) {
     var showImportSheet by remember { mutableStateOf(false) }
-    var showSourceInput by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
     var orderChanged by remember { mutableStateOf(false) }
@@ -75,15 +73,6 @@ fun HighlightRuleConfigSheet(
         }
     }
 
-    SourceInputDialog(
-        show = showSourceInput,
-        title = stringResource(R.string.import_on_line),
-        onDismissRequest = { showSourceInput = false },
-        onConfirm = {
-            showSourceInput = false
-            onIntent(ReadBookIntent.ImportHighlightRuleSource(it))
-        },
-    )
     FilePickerSheet(
         show = showImportSheet,
         onDismissRequest = { showImportSheet = false },
@@ -91,10 +80,6 @@ fun HighlightRuleConfigSheet(
         onSelectSysFile = {
             showImportSheet = false
             onIntent(ReadBookIntent.OpenHighlightRuleImportPicker)
-        },
-        onManualInput = {
-            showImportSheet = false
-            showSourceInput = true
         },
         allowExtensions = arrayOf("json", "txt"),
     )
@@ -166,13 +151,6 @@ fun HighlightRuleConfigSheet(
                         onClick = {
                             expanded = false
                             onIntent(ReadBookIntent.ExportHighlightRules)
-                        },
-                    )
-                    RoundDropdownMenuItem(
-                        text = stringResource(R.string.copy_url),
-                        onClick = {
-                            expanded = false
-                            onIntent(ReadBookIntent.ExportHighlightRulesAsUrl)
                         },
                     )
                 }

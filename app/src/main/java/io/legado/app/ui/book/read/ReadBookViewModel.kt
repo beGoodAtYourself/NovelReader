@@ -4,7 +4,6 @@ import android.app.Application
 import android.net.Uri
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.viewModelScope
-import io.legado.app.BuildConfig
 import io.legado.app.R
 import io.legado.app.base.BaseViewModel
 import io.legado.app.constant.AppLog
@@ -25,7 +24,6 @@ import io.legado.app.data.repository.ReadRecordRepository
 import io.legado.app.data.repository.ReadSettingsRepository
 import io.legado.app.data.repository.ReplaceRuleRepository
 import io.legado.app.data.repository.SettingsRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.domain.gateway.AiArtifactGateway
 import io.legado.app.domain.gateway.AiProfileGateway
 import io.legado.app.domain.gateway.AiPromptPresetGateway
@@ -44,12 +42,10 @@ import io.legado.app.domain.usecase.AiTextFactoryUseCase
 import io.legado.app.domain.usecase.ChangeBookSourceUseCase
 import io.legado.app.domain.usecase.CleanSelectedTextUseCase
 import io.legado.app.domain.usecase.GenerateChapterSummaryUseCase
-import io.legado.app.domain.usecase.GetReadingProgressUseCase
 import io.legado.app.domain.usecase.RelocateMarkingTargetUseCase
 import io.legado.app.domain.usecase.SaveBookContentProcessUseCase
 import io.legado.app.domain.usecase.SaveMarkingUseCase
 import io.legado.app.domain.usecase.SyncReadAloudVoicesUseCase
-import io.legado.app.domain.usecase.UploadReadingProgressUseCase
 import io.legado.app.domain.usecase.VerifyBookmarkTargetUseCase
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.feature.reader.core.navigation.ReaderChapterPagePosition
@@ -82,7 +78,6 @@ import io.legado.app.ui.book.read.sheet.ReaderBookSheetTab
 import io.legado.app.ui.book.searchContent.SearchResult
 import io.legado.app.utils.GSON
 import io.legado.app.utils.ImageSaveUtils
-import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.isTrue
 import io.legado.app.utils.openUrl
@@ -115,15 +110,12 @@ private const val READER_SYNC_MIN_INTERVAL_MS = 250L
  */
 class ReadBookViewModel(
     application: Application,
-    private val getReadingProgressUseCase: GetReadingProgressUseCase,
-    private val uploadReadingProgressUseCase: UploadReadingProgressUseCase,
     val translateChapterUseCase: io.legado.app.domain.usecase.TranslateChapterUseCase,
     private val readSettingsRepository: ReadSettingsRepository,
     private val readBookStyleConfigRepository: ReadStyleGateway,
     private val readAloudSettingsRepository: ReadAloudSettingsRepository,
     private val localPreferencesRepository: SettingsRepository,
     private val highlightRuleRepository: HighlightRuleRepository,
-    private val uploadRepository: UploadRepository,
     private val changeBookSourceUseCase: ChangeBookSourceUseCase,
     private val generateChapterSummaryUseCase: GenerateChapterSummaryUseCase,
     private val cleanSelectedTextUseCase: CleanSelectedTextUseCase,
@@ -352,7 +344,6 @@ class ReadBookViewModel(
             }
         },
         highlightRuleRepository = highlightRuleRepository,
-        uploadRepository = uploadRepository,
     ) }
 
     val highlightRuleState get() = highlightRuleDelegate.uiState
@@ -490,8 +481,6 @@ class ReadBookViewModel(
         changeSourceSettingsGateway = changeSourceSettingsGateway,
         downloadCacheSettingsGateway = downloadCacheSettingsGateway,
         changeBookSourceUseCase = changeBookSourceUseCase,
-        getReadingProgressUseCase = getReadingProgressUseCase,
-        uploadReadingProgressUseCase = uploadReadingProgressUseCase,
     )
 
     // --- 阅读样式域（无自持状态，styleConfig / activeReminder / eyeProtection 仍在 UiState）---
@@ -641,13 +630,6 @@ class ReadBookViewModel(
         }
     }
 
-    /** 云端进度同步域；投影目标 isReadingProgressSyncConfigured 仍留在 UiState 供菜单读。 */
-    private val readingProgressSyncDelegate by lazy {
-        ReadingProgressSyncDelegate(viewModelScope, getReadingProgressUseCase) { configured ->
-            _uiState.update { it.copy(isReadingProgressSyncConfigured = configured) }
-        }
-    }
-
     init {
         // 订阅必须早于 attach()：会话事件用 tryEmit 投递，没有订阅者会被丢弃。
         // viewModelScope 是 Main.immediate，VM 在主线程构造，故 launch 会同步跑到
@@ -659,7 +641,6 @@ class ReadBookViewModel(
         collectEventBus()
         collectReaderSession()
         collectReadStyle()
-        readingProgressSyncDelegate.start()
         replaceRuleDelegate.start()
     }
 
@@ -786,13 +767,11 @@ class ReadBookViewModel(
                         it.copy(menuState = ReadBookMenuState())
                     }
                 } else {
-                    ensureReadingProgressSyncConfigured()
                     _uiState.update { it.copy(menuState = ReadBookMenuState(visible = true)) }
                 }
             }
 
             is ReadBookIntent.ShowMenu -> {
-                ensureReadingProgressSyncConfigured()
                 _uiState.update { it.copy(menuState = ReadBookMenuState(visible = true)) }
             }
 
@@ -1108,15 +1087,7 @@ class ReadBookViewModel(
                 }
             }
 
-            is ReadBookIntent.MenuCoverProgress -> if (ReadBook.book != null) viewModelScope.launch {
-                // 覆盖云端进度直接走 AppWebDav，必须先等云端初始化结束，否则上传被静默丢弃
-                readingProgressSyncDelegate.ensureConfiguredNow()
-                ReadBook.uploadProgress(true) {
-                    _effects.tryEmit(
-                        ReadBookEffect.ShowToast(context.getString(R.string.upload_book_success))
-                    )
-                }
-            }
+            is ReadBookIntent.MenuCoverProgress -> Unit
 
             is ReadBookIntent.MenuSameTitleRemoved -> {
                 ReadBook.book?.let {
@@ -1280,7 +1251,7 @@ class ReadBookViewModel(
             is ReadBookIntent.ExportHighlightRules -> {
                 _effects.tryEmit(ReadBookEffect.OpenHighlightRuleExportPicker)
             }
-            is ReadBookIntent.ExportHighlightRulesAsUrl -> highlightRuleDelegate.exportAsUrl()
+            is ReadBookIntent.ExportHighlightRulesAsUrl -> Unit
             is ReadBookIntent.ExportHighlightRulesToFile ->
                 highlightRuleDelegate.exportToFile(intent.uri)
             is ReadBookIntent.SaveMenuCustomIcon ->
@@ -1674,31 +1645,12 @@ class ReadBookViewModel(
         ReadBook.commitReadSession()
         ReadBook.cancelPreDownloadTask()
 
-        if (!BuildConfig.DEBUG) {
-            if (backupSettingsGateway.currentSettings.syncBookProgressPlus) {
-                ReadBook.syncProgress()
-            } else {
-                ReadBook.uploadProgress()
-            }
-        }
         justInitData = false
     }
 
     private fun handleOnDispose() {
         backupJob?.cancel()
         ReadBook.cancelPreDownloadTask()
-    }
-
-    fun onNetworkChanged() {
-        if (
-            backupSettingsGateway.currentSettings.syncBookProgressPlus &&
-            NetworkUtils.isAvailable() &&
-            !justInitData
-        ) {
-            ReadBook.syncProgress(newProgressAction = { progress ->
-                sureNewProgress(progress)
-            })
-        }
     }
 
     /**
@@ -1709,7 +1661,6 @@ class ReadBookViewModel(
         backupJob = viewModelScope.launch(IO) {
             delay(5 * 60 * 1000) // 5 minutes
             ReadBook.book?.let { book ->
-                uploadBookProgress(book)
                 coroutineContext.ensureActive()
                 _effects.tryEmit(ReadBookEffect.BackupNow)
             }
@@ -2214,12 +2165,10 @@ class ReadBookViewModel(
 
     fun changeTo(book: Book) = loadDelegate.changeTo(book)
 
-    fun isReadingProgressSyncConfigured(): Boolean = loadDelegate.isReadingProgressSyncConfigured()
+    fun isReadingProgressSyncConfigured(): Boolean = false
 
     /** 打开阅读菜单时补齐云端配置（上游 `onPrepareOptionsMenu` 的重算时机）。 */
-    fun ensureReadingProgressSyncConfigured() = readingProgressSyncDelegate.ensureConfigured()
 
-    suspend fun uploadBookProgress(book: Book) = loadDelegate.uploadBookProgress(book)
 
     fun openChapter(index: Int, durChapterPos: Int = 0, success: (() -> Unit)? = null) {
         ReadBook.openChapter(index, durChapterPos, success = success)

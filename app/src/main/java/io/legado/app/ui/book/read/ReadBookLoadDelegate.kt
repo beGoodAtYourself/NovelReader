@@ -13,16 +13,12 @@ import io.legado.app.data.repository.ReadSettingsRepository
 import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.gateway.ChangeSourceSettingsGateway
 import io.legado.app.domain.gateway.DownloadCacheSettingsGateway
-import io.legado.app.domain.model.ReadingProgress
 import io.legado.app.domain.usecase.ChangeBookSourceUseCase
-import io.legado.app.domain.usecase.GetReadingProgressUseCase
-import io.legado.app.domain.usecase.UploadReadingProgressUseCase
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.feature.reader.platform.ReaderPerfTrace
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.isLocalModified
-import io.legado.app.help.book.simulatedTotalChapterNum
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.model.ReadBook
 import io.legado.app.model.SourceCallBack
@@ -68,8 +64,6 @@ class ReadBookLoadDelegate(
     private val changeSourceSettingsGateway: ChangeSourceSettingsGateway,
     private val downloadCacheSettingsGateway: DownloadCacheSettingsGateway,
     private val changeBookSourceUseCase: ChangeBookSourceUseCase,
-    private val getReadingProgressUseCase: GetReadingProgressUseCase,
-    private val uploadReadingProgressUseCase: UploadReadingProgressUseCase,
 ) {
 
     interface Host {
@@ -102,6 +96,7 @@ class ReadBookLoadDelegate(
             bookUrl.isNullOrEmpty() -> bookRepository.getLastReadBook()
             else -> bookRepository.getBook(bookUrl)
         } ?: return@withContext null
+        if (!io.legado.app.domain.model.LocalReadingPolicy.acceptsBook(book.type, book.bookUrl)) return@withContext null
         ReadBook.upReadBookConfig(book)
         book
     }
@@ -127,7 +122,7 @@ class ReadBookLoadDelegate(
                     else -> bookRepository.getBook(bookUrl)
                 } ?: ReadBook.book
                 when {
-                    book != null -> initBook(book)
+                    book != null && io.legado.app.domain.model.LocalReadingPolicy.acceptsBook(book.type, book.bookUrl) -> initBook(book)
                     else -> {
                         ReadBook.upMsg(context.getString(R.string.no_book))
                         AppLog.put("未找到书籍\nbookUrl:$bookUrl")
@@ -200,12 +195,6 @@ class ReadBookLoadDelegate(
         }
         if (ReadBook.chapterChanged) {
             ReadBook.chapterChanged = false
-        } else if (!ReadBook.isCurrentBookReadAloud && ReadBook.inBookshelf) {
-            if (backupSettingsGateway.currentSettings.syncBookProgressPlus) {
-                ReadBook.syncProgress({ progress -> host.sureNewProgress(progress) })
-            } else {
-                syncBookProgress(book)
-            }
         }
         if (!book.isLocal && ReadBook.bookSource == null) {
             autoChangeSource(book.name, book.author)
@@ -296,58 +285,6 @@ class ReadBookLoadDelegate(
         }
         return true
     }
-
-    fun syncBookProgress(
-        book: Book,
-        alertSync: ((progress: BookProgress) -> Unit)? = null
-    ) {
-        if (!backupSettingsGateway.currentSettings.syncBookProgress) return
-        Coroutine.async(scope, Dispatchers.IO) {
-            getReadingProgressUseCase.execute(book.name, book.author)?.toBookProgress()
-        }.onError {
-            AppLog.put("拉取阅读进度失败《${book.name}》\n${it.localizedMessage}", it)
-        }.onSuccess { progress ->
-            progress ?: return@onSuccess
-            if (progress.durChapterIndex < book.durChapterIndex ||
-                (progress.durChapterIndex == book.durChapterIndex
-                        && progress.durChapterPos < book.durChapterPos)
-            ) {
-                alertSync?.invoke(progress)
-            } else if (progress.durChapterIndex < book.simulatedTotalChapterNum()) {
-                ReadBook.setProgress(progress)
-                AppLog.put("自动同步阅读进度成功《${book.name}》 ${progress.durChapterTitle}")
-            }
-        }
-    }
-
-    fun isReadingProgressSyncConfigured(): Boolean {
-        return getReadingProgressUseCase.isConfigured
-    }
-
-    suspend fun uploadBookProgress(book: Book) {
-        uploadReadingProgressUseCase.execute(book.toReadingProgress())?.let { uploadTime ->
-            book.syncTime = uploadTime
-            bookRepository.update(book)
-        }
-    }
-
-    private fun Book.toReadingProgress() = ReadingProgress(
-        name = name,
-        author = author,
-        durChapterIndex = durChapterIndex,
-        durChapterPos = durChapterPos,
-        durChapterTime = durChapterTime,
-        durChapterTitle = durChapterTitle
-    )
-
-    private fun ReadingProgress.toBookProgress() = BookProgress(
-        name = name,
-        author = author,
-        durChapterIndex = durChapterIndex,
-        durChapterPos = durChapterPos,
-        durChapterTime = durChapterTime,
-        durChapterTitle = durChapterTitle
-    )
 
     fun changeTo(book: Book, toc: List<BookChapter>) {
         changeSourceCoroutine?.cancel()

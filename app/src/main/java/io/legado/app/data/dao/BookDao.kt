@@ -30,8 +30,14 @@ private const val PRIVATE_GROUP_MASK =
 private const val PUBLIC_GROUP_MASK =
     "(SELECT COALESCE(SUM(groupId), 0) FROM book_groups WHERE groupId > 0 AND isPrivate = 0)"
 
+// 本地过滤同时用于分组计数和预览，避免旧备份中的远程书籍占据展示名额。
+private const val LOCAL_BOOK_FILTER =
+    "(type & ${BookType.local} > 0 AND type & ${BookType.notShelf} = 0 " +
+        "AND trim(bookUrl) != '' AND substr(bookUrl, 1, 2) != '//' " +
+        "AND (instr(bookUrl, ':') = 0 OR lower(bookUrl) LIKE 'file:%' OR lower(bookUrl) LIKE 'content:%'))"
+
 private const val PUBLIC_BOOK_FILTER =
-    "(`group` = 0 OR (`group` & $PRIVATE_GROUP_MASK) = 0)"
+    "($LOCAL_BOOK_FILTER AND (`group` = 0 OR (`group` & $PRIVATE_GROUP_MASK) = 0))"
 
 @Dao
 interface BookDao {
@@ -357,6 +363,7 @@ interface BookDao {
         FROM books 
         WHERE (`group` & :group) > 0
         AND ((SELECT isPrivate FROM book_groups WHERE groupId = :group) = 1 OR $PUBLIC_BOOK_FILTER)
+        AND $LOCAL_BOOK_FILTER
         """
     )
     fun flowBookShelfByUserGroup(group: Long): Flow<List<BookShelfItem>>
@@ -738,7 +745,7 @@ interface BookDao {
         SELECT bookUrl, name, author, coverUrl, customCoverUrl, origin, originName,
                totalChapterNum, latestChapterTitle, durChapterTime
         FROM books
-        WHERE type & ${BookType.notShelf} = 0
+        WHERE $LOCAL_BOOK_FILTER
         """
     )
     fun getShelfBookSummaries(): List<ShelfBookSummary>
@@ -781,7 +788,7 @@ interface BookDao {
     @Query("SELECT * FROM books where type & :type > 0 and type & ${BookType.local} = 0")
     fun getByTypeOnLine(type: Int): List<Book>
 
-    @get:Query("SELECT * FROM books where type & ${BookType.text} > 0 ORDER BY durChapterTime DESC limit 1")
+    @get:Query("SELECT * FROM books where $LOCAL_BOOK_FILTER AND type & ${BookType.text} > 0 ORDER BY durChapterTime DESC limit 1")
     val lastReadBook: Book?
 
     @get:Query("SELECT bookUrl FROM books")
@@ -900,6 +907,7 @@ interface BookDao {
         SELECT COUNT(*) FROM books
         WHERE (`group` & :groupId) > 0
         AND ((SELECT isPrivate FROM book_groups WHERE groupId = :groupId) = 1 OR $PUBLIC_BOOK_FILTER)
+        AND $LOCAL_BOOK_FILTER
         """
     )
     fun flowUserGroupBookCount(groupId: Long): Flow<Int>
@@ -1178,6 +1186,7 @@ interface BookDao {
         FROM books
         WHERE (`group` & :groupId) > 0
             AND ((SELECT isPrivate FROM book_groups WHERE groupId = :groupId) = 1 OR $PUBLIC_BOOK_FILTER)
+        AND $LOCAL_BOOK_FILTER
         ORDER BY durChapterTime DESC
         LIMIT 10
         """

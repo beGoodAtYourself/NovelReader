@@ -1,10 +1,8 @@
 package io.legado.app.ui.about
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,8 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import io.legado.app.R
 import io.legado.app.constant.AppConst.appInfo
 import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.SettingItemWithDivider
 import io.legado.app.ui.widget.components.SplicedColumnGroup
@@ -57,21 +52,12 @@ fun AboutScreen(
     onBack: () -> Unit = {},
     versionName: String = appInfo.versionName,
 ) {
-    if (ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)) {
-        MiuixAboutScreen(
-            state = state,
-            onIntent = onIntent,
-            onBack = onBack,
-            versionName = versionName,
-        )
-    } else {
-        MaterialAboutScreen(
-            state = state,
-            onIntent = onIntent,
-            onBack = onBack,
-            versionName = versionName,
-        )
-    }
+    MaterialAboutScreen(
+        state = state,
+        onIntent = onIntent,
+        onBack = onBack,
+        versionName = versionName,
+    )
 
     AboutOverlays(
         state = state,
@@ -136,7 +122,7 @@ private fun MaterialAboutScreen(
                     .padding(vertical = 4.dp)
             )
             AppText(
-                text = stringResource(R.string.about_description),
+                text = stringResource(R.string.local_reader_about),
                 style = LegadoTheme.typography.bodyLarge,
                 fontSize = 12.sp,
                 modifier = Modifier
@@ -144,30 +130,6 @@ private fun MaterialAboutScreen(
                     .wrapContentWidth(Alignment.CenterHorizontally)
                     .padding(bottom = 4.dp)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_web_outline),
-                        contentDescription = stringResource(R.string.about_open_project_homepage)
-                    )
-                }
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_github),
-                        contentDescription = stringResource(R.string.about_open_github)
-                    )
-                }
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.CheckUpdate) }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_import),
-                        contentDescription = stringResource(R.string.check_update)
-                    )
-                }
-            }
-
             SplicedColumnGroup(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 title = ""
@@ -175,7 +137,7 @@ private fun MaterialAboutScreen(
                 SettingItemWithDivider {
                     SettingItem(
                         title = stringResource(R.string.contributors),
-                        onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }
+                        onClick = { onIntent(AboutIntent.ShowMdFile("Legado / 阅读 MD3", "localCredits.md")) }
                     )
                 }
                 SettingItemWithDivider {
@@ -259,14 +221,6 @@ private fun AboutOverlays(
             onClear = { onIntent(AboutIntent.ClearCrashLogs) },
         )
 
-        is AboutSheet.Update -> UpdateSheet(
-            show = currentSheet is AboutSheet.Update,
-            updateInfo = sheet.updateInfo,
-            updateToVariant = state.updateToVariant,
-            mode = sheet.mode,
-            onDismissRequest = { onIntent(AboutIntent.DismissSheet) },
-            onStartDownload = { onIntent(AboutIntent.StartDownload) },
-        )
     }
 
     AppAlertDialog(

@@ -348,9 +348,7 @@ data class Book(
         config.translationMode = enabled
     }
 
-    fun getTranslationMode(): Boolean {
-        return config.translationMode
-    }
+    fun getTranslationMode(): Boolean = false
 
     // dailyChapters 的 setter 和 getter
     fun setDailyChapters(dailyChapters: Int) {

@@ -12,7 +12,7 @@ data class ReadSettings(
     val titleBarMode: String = "1",
     val menuAlpha: Int = 100,
     val readBodyToLh: Boolean = true,
-    val defaultSourceChangeAll: Boolean = true,
+    val defaultSourceChangeAll: Boolean = false,
     val textFullJustify: Boolean = true,
     val textBottomJustify: Boolean = true,
     val adaptSpecialStyle: Boolean = true,
@@ -39,7 +39,7 @@ data class ReadSettings(
     /** 阅读主题弹窗（背景网格）的列数。 */
     val themeGridColumns: Int = 4,
     val selectVibrator: Boolean = false,
-    val autoChangeSource: Boolean = true,
+    val autoChangeSource: Boolean = false,
     val autoSuggestDayNight: Boolean = false,
     val readingAnchorEnabled: Boolean = true,
     val readAloudDetachReminderEnabled: Boolean = false,

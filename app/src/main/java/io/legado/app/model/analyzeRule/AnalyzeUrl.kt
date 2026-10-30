@@ -867,7 +867,7 @@ class AnalyzeUrl(
         val customIp by lazy { ConcurrentHashMap<String, String>() }
         fun AnalyzeUrl.getMediaItem(): MediaItem {
             setCookie()
-            return ExoPlayerHelper.createMediaItem(url, headerMap)
+            return ExoPlayerHelper.createMediaItem(url)
         }
 
     }

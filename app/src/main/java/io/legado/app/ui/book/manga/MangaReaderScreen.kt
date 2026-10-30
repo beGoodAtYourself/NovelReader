@@ -402,20 +402,7 @@ fun MangaReaderScreen(
         dismissText = stringResource(R.string.cancel),
         onDismiss = { onIntent(MangaReaderIntent.DismissDialog) },
     )
-    val progressDialog = state.activeDialog as? MangaReaderDialog.ConfirmProgress
-    AppAlertDialog(
-        show = progressDialog != null,
-        onDismissRequest = { onIntent(MangaReaderIntent.DismissDialog) },
-        title = stringResource(R.string.get_book_progress),
-        text = stringResource(R.string.cloud_progress_exceeds_current),
-        confirmText = stringResource(R.string.ok),
-        onConfirm = {
-            progressDialog?.progress?.let { onIntent(MangaReaderIntent.ApplyReadingProgress(it)) }
-            onIntent(MangaReaderIntent.DismissDialog)
-        },
-        dismissText = stringResource(R.string.cancel),
-        onDismiss = { onIntent(MangaReaderIntent.DismissDialog) },
-    )
+
 }
 
 private fun MangaReaderText.resolve(context: android.content.Context): String = when (this) {

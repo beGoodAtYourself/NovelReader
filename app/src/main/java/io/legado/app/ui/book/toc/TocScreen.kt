@@ -222,7 +222,6 @@ fun TocScreen(
     val locateCurrentReadingText = stringResource(R.string.locate_current_reading)
     val moveToTopText = stringResource(R.string.move_to_top)
     val moveToBottomText = stringResource(R.string.move_to_bottom)
-    val downloadAllText = stringResource(R.string.download_all)
     val invertSelectionText = stringResource(R.string.invert_selection)
     val selectFollowingText = stringResource(R.string.select_following)
     val addBookmarkText = stringResource(R.string.bookmark_add)
@@ -296,7 +295,6 @@ fun TocScreen(
         locateCurrentReadingText,
         moveToTopText,
         moveToBottomText,
-        downloadAllText
     ) {
         listOf(
             FabMenuItem(Icons.Default.LocationOn, locateCurrentReadingText) {
@@ -316,9 +314,6 @@ fun TocScreen(
             FabMenuItem(Icons.Default.VerticalAlignBottom, moveToBottomText) {
                 scope.launch { listState.animateScrollToItem(state.items.size) }
             },
-            FabMenuItem(Icons.Default.DownloadForOffline, downloadAllText) {
-                onIntent(TocIntent.DownloadAll)
-            }
         )
     }
 
@@ -340,11 +335,6 @@ fun TocScreen(
                 text = selectFollowingText,
                 icon = Icons.Default.ExpandMore,
                 onClick = { onIntent(TocIntent.SelectFromLast) }
-            ),
-            ActionItem(
-                text = addBookmarkText,
-                icon = Icons.Default.BookmarkAdd,
-                onClick = { onIntent(TocIntent.AddBookmarksForSelected) }
             ),
             ActionItem(
                 text = deleteAssignmentText,
@@ -638,12 +628,9 @@ fun TocScreen(
                     onSelectAll = { onIntent(TocIntent.SelectAll) },
                     onSelectInvert = { onIntent(TocIntent.InvertSelection) },
                     primaryAction = ActionItem(
-                        text = stringResource(
-                            R.string.download_selected_count,
-                            state.selectedIds.size
-                        ),
-                        icon = Icons.Default.Download,
-                        onClick = { onIntent(TocIntent.DownloadSelected) }
+                        text = addBookmarkText,
+                        icon = Icons.Default.BookmarkAdd,
+                        onClick = { onIntent(TocIntent.AddBookmarksForSelected) }
                     ),
                     secondaryActions = selectionSecondaryActions
                 )

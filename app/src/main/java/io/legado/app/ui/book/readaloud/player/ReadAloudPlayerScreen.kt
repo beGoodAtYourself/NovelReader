@@ -37,7 +37,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -85,7 +84,6 @@ import io.legado.app.core.ui.player.TrackPlayerMorphCoverPage
 import io.legado.app.domain.model.settings.ReadAloudTimerMode
 import io.legado.app.ui.book.readaloud.ReadAloudTimerConfig
 import io.legado.app.ui.book.readaloud.ReadAloudTimerSheet
-import io.legado.app.ui.book.readaloud.ReadAloudVoiceSheet
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.hazeStyle.HazeLegado
 import io.legado.app.ui.util.rememberBlurBackdrop
@@ -345,16 +343,6 @@ fun ReadAloudPlayerScreenContent(
                         SmallAnimatedButton(
                             containerColor = Color.Transparent,
                             checked = false,
-                            icon = Icons.Default.RecordVoiceOver,
-                            text = stringResource(R.string.cloud_tts_step_voice),
-                            contentDescription = stringResource(R.string.cloud_tts_step_voice),
-                            onCheckedChange = {
-                                onIntent(ReadAloudPlayerIntent.OpenSheet(ReadAloudPlayerSheet.Voice))
-                            },
-                        )
-                        SmallAnimatedButton(
-                            containerColor = Color.Transparent,
-                            checked = false,
                             icon = Icons.Default.Speed,
                             text = stringResource(R.string.read_aloud_adjust_speed),
                             contentDescription = stringResource(R.string.read_aloud_adjust_speed),
@@ -430,12 +418,6 @@ fun ReadAloudPlayerScreenContent(
         state = state,
         onDismissRequest = { onIntent(ReadAloudPlayerIntent.DismissSheet) },
         onIntent = onIntent,
-    )
-    ReadAloudVoiceSheet(
-        show = state.activeSheet == ReadAloudPlayerSheet.Voice,
-        voices = state.voices,
-        onDismissRequest = { onIntent(ReadAloudPlayerIntent.DismissSheet) },
-        onSelectVoice = { onIntent(ReadAloudPlayerIntent.SelectVoice(it)) },
     )
     ReadAloudTimerSheet(
         show = state.activeSheet == ReadAloudPlayerSheet.Timer,

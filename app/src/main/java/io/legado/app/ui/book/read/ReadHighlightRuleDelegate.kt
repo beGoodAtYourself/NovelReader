@@ -3,19 +3,13 @@ package io.legado.app.ui.book.read
 import android.content.Context
 import android.net.Uri
 import io.legado.app.R
-import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.data.repository.HighlightRulePresets
 import io.legado.app.data.repository.HighlightRuleRepository
-import io.legado.app.data.repository.UploadRepository
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.coroutine.Coroutine
-import io.legado.app.help.http.decompressed
-import io.legado.app.help.http.newCallResponseBody
-import io.legado.app.help.http.okHttpClient
-import io.legado.app.help.http.text
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.importComponents.ImportItemWrapper
 import io.legado.app.ui.widget.components.importComponents.ImportStatus
@@ -47,7 +41,6 @@ class ReadHighlightRuleDelegate(
     private val scope: CoroutineScope,
     private val host: Host,
     private val highlightRuleRepository: HighlightRuleRepository,
-    private val uploadRepository: UploadRepository,
 ) {
 
     interface Host {
@@ -251,17 +244,7 @@ class ReadHighlightRuleDelegate(
             text.isJsonObject() -> listOf(
                 GSON.fromJsonObject<HighlightRule>(text).getOrThrow()
             )
-            text.isAbsUrl() -> {
-                val body = okHttpClient.newCallResponseBody {
-                    if (text.endsWith("#requestWithoutUA")) {
-                        url(text.substringBeforeLast("#requestWithoutUA"))
-                        header(AppConst.UA_NAME, "null")
-                    } else {
-                        url(text)
-                    }
-                }.decompressed().text()
-                importSourceAwait(body)
-            }
+            text.isAbsUrl() -> throw NoStackTraceException(context.getString(R.string.local_reader_only))
             else -> throw NoStackTraceException(context.getString(R.string.wrong_format))
         }
     }
@@ -370,17 +353,4 @@ class ReadHighlightRuleDelegate(
         }
     }
 
-    fun exportAsUrl() {
-        val rules = _uiState.value.rules
-        Coroutine.async(scope, Dispatchers.IO) {
-            uploadRepository.upload(
-                fileName = HighlightRuleRepository.backupFileName,
-                file = GSON.toJson(rules),
-                contentType = "application/json",
-            )
-        }.onSuccess { url ->
-            context.sendToClip(url)
-            host.showToast(context.getString(R.string.copy_url))
-        }
-    }
 }

@@ -180,10 +180,6 @@ fun DictRuleScreen(
             showExportSheet = false
             exportDoc.launch("exportDictRule.json")
         },
-        onUpload = {
-            showExportSheet = false
-            onIntent(DictRuleIntent.UploadSelection)
-        },
         allowExtensions = arrayOf("json")
     )
 

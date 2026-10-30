@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 
 class CleanSelectedTextUseCase(
     private val aiProfileGateway: AiProfileGateway,
-    private val aiToolAwareGenerationUseCase: AiToolAwareGenerationUseCase,
+    private val aiToolAwareGenerationUseCase: AiGenerationUseCase,
     private val aiArtifactGateway: AiArtifactGateway,
     private val aiTaskManager: AiTaskManager,
 ) {
@@ -65,7 +65,7 @@ class CleanSelectedTextUseCase(
         )
         val contentHash = MD5Utils.md5Encode(input)
         val promptHash = MD5Utils.md5Encode(
-            AiPromptTemplate.DEFAULT_CLEAN_SELECTION + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION,
+            AiPromptTemplate.DEFAULT_CLEAN_SELECTION + AiGenerationUseCase.CACHE_PROMPT_VERSION,
         )
         val now = System.currentTimeMillis()
         val artifact = AiArtifact(
@@ -126,7 +126,7 @@ class CleanSelectedTextUseCase(
             )
             val contentHash = MD5Utils.md5Encode(input)
             val promptHash = MD5Utils.md5Encode(
-                prompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+                prompt + AiGenerationUseCase.CACHE_PROMPT_VERSION
             )
 
             aiArtifactGateway.getCachedArtifact(
@@ -206,7 +206,7 @@ class CleanSelectedTextUseCase(
         )
         val contentHash = MD5Utils.md5Encode(input)
         val promptHash = MD5Utils.md5Encode(
-            prompt + AiToolAwareGenerationUseCase.CACHE_PROMPT_VERSION
+            prompt + AiGenerationUseCase.CACHE_PROMPT_VERSION
         )
 
         aiArtifactGateway.getCachedArtifact(

@@ -1,7 +1,6 @@
 package io.legado.app.ui.about
 
 import androidx.compose.runtime.Stable
-import io.legado.app.help.update.AppUpdate
 import io.legado.app.utils.FileDoc
 
 @Stable
@@ -16,13 +15,9 @@ sealed interface AboutSheet {
     data object None : AboutSheet
     data class Markdown(val title: String, val content: String) : AboutSheet
     data object CrashLogs : AboutSheet
-    data class Update(
-        val updateInfo: AppUpdate.UpdateInfo,
-        val mode: UpdateMode = UpdateMode.UPDATE,
-    ) : AboutSheet
+
 }
 
-enum class UpdateMode { UPDATE, VIEW_LOG }
 
 sealed interface AboutDialog {
     data object CheckingUpdate : AboutDialog

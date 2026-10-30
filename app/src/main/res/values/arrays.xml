@@ -277,34 +277,13 @@
 	</string-array>
 
 	<string-array name="default_home_page">
-		<item>@string/home</item>
 		<item>@string/bookshelf</item>
-        <item>@string/discovery</item>
-		<item>@string/rss</item>
 		<item>@string/my</item>
 	</string-array>
 
-
-	<string-array name="default_app_variant">
-		<item>@string/official_version</item>
-		<item>@string/beta_release_version</item>
-		<item>@string/all_version</item>
-		<item>@string/beta_releaseA_version</item>
-	</string-array>
-
 	<string-array name="default_home_page_value">
-		<item>home</item>
 		<item>bookshelf</item>
-		<item>explore</item>
-		<item>rss</item>
 		<item>my</item>
-	</string-array>
-
-	<string-array name="default_app_variant_value">
-		<item>official_version</item>
-		<item>beta_release_version</item>
-		<item>all_version</item>
-		<item>beta_releaseA_version</item>
 	</string-array>
 
 	<string-array name="tip_color">
@@ -359,12 +338,4 @@
 		<item>High</item>
 		<item>Maximum</item>
 	</string-array>
-
-	<string-array name="backup_sync_mode">
-		<item>@string/backup_to_local_and_network</item>
-		<item>@string/backup_to_local</item>
-		<item>@string/backup_to_network</item>
-	</string-array>
-
-	<string name="all_version">All Version</string>
 </resources>

@@ -69,37 +69,16 @@ fun ConfigNavScreen(
                         onClick = onNavigateToRead
                     )
                     ClickableSettingItem(
-                        title = stringResource(R.string.aloud_config),
-                        description = stringResource(R.string.multi_role_rule_summary),
-                        onClick = onNavigateToReadAloud
-                    )
-                    ClickableSettingItem(
                         title = stringResource(R.string.cover_config),
                         onClick = onNavigateToCover
-                    )
-                    ClickableSettingItem(
-                        title = stringResource(R.string.download_cache_config),
-                        onClick = onNavigateToDownloadCache
                     )
                     ClickableSettingItem(
                         title = stringResource(R.string.backup_restore),
                         onClick = onNavigateToBackup
                     )
                     ClickableSettingItem(
-                        title = stringResource(R.string.ai_config),
-                        onClick = onNavigateToAi
-                    )
-                    ClickableSettingItem(
-                        title = stringResource(R.string.translation_config),
-                        onClick = onNavigateToTranslation
-                    )
-                    ClickableSettingItem(
                         title = stringResource(R.string.privacy),
                         onClick = onNavigateToPrivate
-                    )
-                    ClickableSettingItem(
-                        title = stringResource(R.string.lab_setting),
-                        onClick = onNavigateToLab
                     )
                 }
             }

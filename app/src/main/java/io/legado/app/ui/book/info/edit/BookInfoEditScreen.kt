@@ -22,15 +22,10 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -55,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
-import io.legado.app.ui.book.info.ChangeCoverSheet
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.fadingEdge
 import io.legado.app.ui.widget.components.AppScaffold
@@ -67,7 +61,6 @@ import io.legado.app.ui.widget.components.image.cover.CoilBookCover
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenu
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.reorderAccessibility
-import io.legado.app.ui.widget.components.settingItem.SwitchSettingItem
 import io.legado.app.ui.widget.components.text.AnimatedTextLine
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
@@ -146,18 +139,6 @@ fun BookInfoEditContent(
     onOpenEventList: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    var showChangeCoverSheet by remember { mutableStateOf(false) }
-    ChangeCoverSheet(
-        show = showChangeCoverSheet,
-        name = uiState.name,
-        author = uiState.author,
-        onDismissRequest = { showChangeCoverSheet = false },
-        onSelect = { coverUrl ->
-            viewModel.onCoverUrlChange(coverUrl)
-            showChangeCoverSheet = false
-        },
-    )
-
     val selectCover = rememberLauncherForActivityResult(SelectImageContract()) {
         it.uri?.let { uri ->
             viewModel.coverChangeTo(context, uri)
@@ -192,11 +173,6 @@ fun BookInfoEditContent(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MediumOutlinedButton(
-                        onClick = { showChangeCoverSheet = true },
-                        icon = Icons.Default.ImageSearch,
-                        contentDescription = stringResource(R.string.refresh_cover)
-                    )
-                    MediumOutlinedButton(
                         onClick = { selectCover.launch() },
                         icon = Icons.Default.FolderOpen,
                         contentDescription = stringResource(R.string.select_folder)
@@ -208,32 +184,10 @@ fun BookInfoEditContent(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                BookTypeDropdown(
-                    bookTypes = listOf(
-                        BookInfoEditType.TEXT to stringResource(R.string.book_type_text),
-                        BookInfoEditType.AUDIO to stringResource(R.string.book_type_audio),
-                        BookInfoEditType.IMAGE to stringResource(R.string.book_type_image)
-                    ),
-                    selectedType = uiState.selectedType,
-                    onTypeSelected = { viewModel.onBookTypeChange(it) }
-                )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        BookKnowledgeEditCard(
-            bookUrl = uiState.book?.bookUrl.orEmpty(),
-            onOpenCharacterList = onOpenCharacterList,
-            onOpenCharacterNetwork = onOpenCharacterNetwork,
-            onOpenKnowledgeList = onOpenKnowledgeList,
-            onOpenEventList = onOpenEventList,
-        )
         Spacer(modifier = Modifier.height(16.dp))
-        SwitchSettingItem(
-            title = stringResource(R.string.fixed_book_type),
-            description = stringResource(R.string.fixed_book_type_summary),
-            checked = uiState.fixedType,
-            onCheckedChange = { viewModel.onFixedTypeChange(it) }
-        )
         Spacer(modifier = Modifier.height(16.dp))
         AppTextField(
             value = uiState.name,
@@ -251,22 +205,7 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
-            value = uiState.coverUrl ?: "",
-            onValueChange = { viewModel.onCoverUrlChange(it) },
-            label = stringResource(R.string.cover_url),
-            backgroundColor = LegadoTheme.colorScheme.surfaceInput,
-            modifier = Modifier.fillMaxWidth()
-        )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
-            value = uiState.sourceKindList.joinToString(", "),
-            onValueChange = {},
-            readOnly = true,
-            label = stringResource(R.string.source_categories),
-            backgroundColor = LegadoTheme.colorScheme.surfaceInput,
-            modifier = Modifier.fillMaxWidth()
-        )
         Spacer(modifier = Modifier.height(8.dp))
         KindEditor(
             kindList = uiState.kindList,
@@ -290,61 +229,6 @@ fun BookInfoEditContent(
             backgroundColor = LegadoTheme.colorScheme.surfaceInput,
             modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-@Composable
-private fun BookKnowledgeEditCard(
-    bookUrl: String,
-    onOpenCharacterList: (String) -> Unit,
-    onOpenCharacterNetwork: (String) -> Unit,
-    onOpenKnowledgeList: (String) -> Unit,
-    onOpenEventList: (String) -> Unit,
-) {
-    NormalCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            AppText(
-                text = stringResource(R.string.book_info_knowledge),
-                style = LegadoTheme.typography.titleMedium,
-            )
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    MediumOutlinedButton(
-                        onClick = { onOpenCharacterList(bookUrl) },
-                        enabled = bookUrl.isNotEmpty(),
-                        icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
-                        text = stringResource(R.string.book_characters),
-                    )
-                }
-                item {
-                    MediumOutlinedButton(
-                        onClick = { onOpenCharacterNetwork(bookUrl) },
-                        enabled = bookUrl.isNotEmpty(),
-                        icon = Icons.Default.Group,
-                        text = stringResource(R.string.character_network),
-                    )
-                }
-                item {
-                    MediumOutlinedButton(
-                        onClick = { onOpenKnowledgeList(bookUrl) },
-                        enabled = bookUrl.isNotEmpty(),
-                        icon = Icons.Default.Book,
-                        text = stringResource(R.string.book_knowledge),
-                    )
-                }
-                item {
-                    MediumOutlinedButton(
-                        onClick = { onOpenEventList(bookUrl) },
-                        enabled = bookUrl.isNotEmpty(),
-                        icon = Icons.Default.Timeline,
-                        text = stringResource(R.string.plot_events),
-                    )
-                }
-            }
-        }
     }
 }
 

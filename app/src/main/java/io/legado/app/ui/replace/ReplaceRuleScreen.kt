@@ -53,7 +53,6 @@ import io.legado.app.ui.widget.components.divider.PillDivider
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.importComponents.BaseImportUiState
 import io.legado.app.ui.widget.components.importComponents.BatchImportDialog
-import io.legado.app.ui.widget.components.importComponents.SourceInputDialog
 import io.legado.app.ui.widget.components.lazylist.FastScrollLazyColumn
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.rules.RuleListScaffold
@@ -122,7 +121,6 @@ fun ReplaceRuleScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val hapticFeedback = LocalHapticFeedback.current
 
-    var showUrlInput by remember { mutableStateOf(false) }
     var showImportSheet by remember { mutableStateOf(false) }
     var showExportSheet by remember { mutableStateOf(false) }
 
@@ -163,26 +161,12 @@ fun ReplaceRuleScreen(
         }
     )
 
-    SourceInputDialog(
-        show = showUrlInput,
-        title = stringResource(R.string.import_on_line),
-        onDismissRequest = { showUrlInput = false },
-        onConfirm = {
-            showUrlInput = false
-            onIntent(ReplaceRuleIntent.ImportSource(it))
-        }
-    )
-
     FilePickerSheet(
         show = showImportSheet,
         onDismissRequest = { showImportSheet = false },
         title = stringResource(R.string.import_replace_rule),
         onSelectSysFile = { types ->
             importDoc.launch(types)
-            showImportSheet = false
-        },
-        onManualInput = {
-            showUrlInput = true
             showImportSheet = false
         },
         allowExtensions = arrayOf("json", "txt")
@@ -194,10 +178,6 @@ fun ReplaceRuleScreen(
         onSelectSysDir = {
             showExportSheet = false
             exportDoc.launch("exportReplaceRule.json")
-        },
-        onUpload = {
-            showExportSheet = false
-            onIntent(ReplaceRuleIntent.UploadSelection)
         },
         allowExtensions = arrayOf("json")
     )

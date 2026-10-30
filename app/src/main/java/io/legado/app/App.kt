@@ -5,9 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.graphics.BitmapFactory
-import android.os.Build
 import androidx.core.graphics.scale
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -44,7 +42,6 @@ import io.legado.app.domain.gateway.ReadSettingsGateway
 import io.legado.app.domain.gateway.ReadStyleGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
 import io.legado.app.help.AppFreezeMonitor
-import io.legado.app.help.AppWebDav
 import io.legado.app.help.CrashHandler
 import io.legado.app.help.DefaultData
 import io.legado.app.help.DispatchersMonitor
@@ -58,16 +55,12 @@ import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ThemeConfigStore
 import io.legado.app.help.config.ThemeConfigStore.applyDayNightInit
 import io.legado.app.help.coroutine.Coroutine
-import io.legado.app.help.http.Cronet
-import io.legado.app.help.http.ObsoleteUrlFactory
-import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.rhino.NativeBaseSource
 import io.legado.app.help.source.SourceHelp
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.model.BookCover
 import io.legado.app.utils.ChineseUtils
-import io.legado.app.utils.FirebaseManager
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefString
@@ -75,16 +68,12 @@ import io.legado.app.utils.isDebuggable
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.chromium.base.ThreadUtils
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext.startKoin
-import splitties.init.appCtx
 import splitties.systemservices.notificationManager
 import java.io.File
-import java.net.URL
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 
@@ -170,11 +159,7 @@ class App : Application(), SingletonImageLoader.Factory {
             }
         }
         super.onCreate()
-        FirebaseManager.init(this)
         CrashHandler(this)
-        if (isDebuggable) {
-            ThreadUtils.setThreadAssertsDisabledForTesting(true)
-        }
         registerActivityLifecycleCallbacks(LifecycleHelp)
         // Rhino 的全局 ContextFactory 必须在任何线程执行 Context.enter() 之前安装：
         // 它只在 RhinoScriptEngine 的 object init 里通过 ContextFactory.initGlobal 生效，
@@ -183,14 +168,6 @@ class App : Application(), SingletonImageLoader.Factory {
         // 普通 Context，强转 RhinoContext 会直接崩溃并把该线程永久污染。
         // 这里改为在 onCreate 中同步执行；RhinoWrapFactory 注册同理要早于任何脚本执行。
         initRhino()
-        Coroutine.async {
-            get<BackupSettingsGateway>().settings
-                .map {
-                    listOf(it.webDavUrl, it.webDavDir, it.webDavAccount, it.webDavPassword)
-                }
-                .distinctUntilChanged()
-                .collect { AppWebDav.upConfig() }
-        }
         // themeMode 是日夜的唯一来源，除外观设置外（阅读页快捷按钮、主题包、恢复备份）
         // 也会直接写网关。AppCompat 的夜间模式统一跟随网关，否则资源配置不变，
         // WebView、旧 View 界面拿到的仍是切换前的深浅色。
@@ -206,8 +183,6 @@ class App : Application(), SingletonImageLoader.Factory {
             LogUtils.init(this@App)
             LogUtils.d("App", "onCreate")
             LogUtils.logDeviceInfo()
-            //预下载Cronet so
-            Cronet.preDownload()
             createNotificationChannels()
             LiveEventBus.config()
                 .lifecycleObserverAlwaysActive(true)
@@ -217,8 +192,6 @@ class App : Application(), SingletonImageLoader.Factory {
             DefaultData.upVersion()
             AppFreezeMonitor.init(this@App)
             DispatchersMonitor.init()
-            URL.setURLStreamHandlerFactory(ObsoleteUrlFactory(okHttpClient))
-            launch { installGmsTlsProvider(appCtx) }
             //初始化封面
             BookCover.toString()
             //清除过期数据
@@ -243,44 +216,6 @@ class App : Application(), SingletonImageLoader.Factory {
             }
             //调整排序序号
             SourceHelp.adjustSortNumber()
-            //同步阅读记录
-            if (backupGateway.currentSettings.syncBookProgress) {
-                AppWebDav.upConfig()
-                AppWebDav.downloadAllBookProgress()
-            }
-        }
-    }
-
-    /**
-     * 尝试在安装了GMS的设备上(GMS或者MicroG)使用GMS内置的Conscrypt
-     * 作为首选JCE提供程序，而使Okhttp在低版本Android上
-     * 能够启用TLSv1.3
-     * https://f-droid.org/zh_Hans/2020/05/29/android-updates-and-tls-connections.html
-     * https://developer.android.google.cn/reference/javax/net/ssl/SSLSocket
-     *
-     * @param context
-     * @return
-     */
-    private fun installGmsTlsProvider(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return
-        }
-        try {
-            val gmsPackageName = "com.google.android.gms"
-            val appInfo = packageManager.getApplicationInfo(gmsPackageName, 0)
-            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0) {
-                return
-            }
-            val gms = context.createPackageContext(
-                gmsPackageName,
-                CONTEXT_INCLUDE_CODE or CONTEXT_IGNORE_SECURITY
-            )
-            gms.classLoader
-                .loadClass("com.google.android.gms.common.security.ProviderInstallerImpl")
-                .getMethod("insertProvider", Context::class.java)
-                .invoke(null, gms)
-        } catch (e: java.lang.Exception) {
-            e.printStackTrace()
         }
     }
 
