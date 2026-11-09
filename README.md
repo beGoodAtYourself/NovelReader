@@ -1,5 +1,19 @@
 # Legado with MD3
 
+## 下载最新版 APK
+
+**[前往最新正式版 Release](https://github.com/beGoodAtYourself/NovelReader/releases/latest)**，无需登录即可下载。
+
+以下直链对应 `3.26.19-local`，需要 Android 8.0 或更高版本；后续新版可通过上方 Release 入口获取。
+
+| 安装包 | 适用设备 | 下载 |
+| --- | --- | --- |
+| ARM64（推荐） | 大多数 Android 手机 | [下载 APK](https://github.com/beGoodAtYourself/NovelReader/releases/download/v3.26.19-local/NovelReader-3.26.19-local-arm64-v8a.apk) |
+| 通用版 | 不确定设备架构时选择 | [下载 APK](https://github.com/beGoodAtYourself/NovelReader/releases/download/v3.26.19-local/NovelReader-3.26.19-local-universal.apk) |
+| ARMv7 | 32 位 ARM 设备 | [下载 APK](https://github.com/beGoodAtYourself/NovelReader/releases/download/v3.26.19-local/NovelReader-3.26.19-local-armeabi-v7a.apk) |
+
+可下载 [SHA-256 校验文件](https://github.com/beGoodAtYourself/NovelReader/releases/download/v3.26.19-local/SHA256SUMS.txt) 核对安装包完整性。
+
 ## 当前定制版：本地阅读
 
 本目录当前构建为 `3.26.19-local`，主界面只保留书架和“我的”。保留本地书籍导入、阅读排版、翻页、书签、阅读记录、本地封面、离线系统朗读和本地备份恢复。
