@@ -74,6 +74,7 @@ import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.toTimeAgo
 import kotlinx.collections.immutable.ImmutableList
+import java.text.DecimalFormat
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -751,12 +752,12 @@ fun BookItem(
     val unreadCount = book.getUnreadChapterNum()
     val unreadText = if (settings.showUnread && unreadCount > 0) unreadCount.toString() else null
     val showUpdateBadge = settings.showUnread && settings.showUnreadNew && book.isNew
-    val bookTypeLabel = if (settings.showTip) {
+    val bookTipLabel = if (settings.showTip) {
         when {
             book.isAudio -> stringResource(R.string.audio)
             book.isImage -> stringResource(R.string.manga)
             (book.type and BookType.webFile) > 0 -> stringResource(R.string.web_file)
-            book.isLocal -> stringResource(R.string.local)
+            book.isLocal -> DecimalFormat("0.0%").format(book.getReadProgress())
             else -> stringResource(R.string.noval)
         }
     } else {
@@ -791,7 +792,7 @@ fun BookItem(
                 // 锁定态不露未读角标与来源标签：它们都是真实信息
                 badgeText = if (locked) null else if (layoutMode != 0) unreadText else null,
                 showBadgeDot = !locked && showUpdateBadge,
-                leftBottomText = if (locked) null else matchedSourceLabel ?: bookTypeLabel,
+                leftBottomText = if (locked) null else matchedSourceLabel ?: bookTipLabel,
                 showLoadingPlaceholder = true,
                 // 模糊与"已隐藏"叠加层都交给封面组件在**共享元素节点内部**渲染。
                 // 这是关键：转场时 overlay 只搬运 sharedBounds 节点自己的内容，
@@ -819,7 +820,7 @@ fun BookItem(
         book.durChapterTitle,
         book.latestChapterTitle,
         matchedSourceLabel,
-        bookTypeLabel,
+        bookTipLabel,
     )
 
     if (layoutMode != 0) {

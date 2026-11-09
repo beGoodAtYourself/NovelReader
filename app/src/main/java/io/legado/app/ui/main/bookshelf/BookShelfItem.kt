@@ -49,6 +49,16 @@ data class BookShelfItem(
 
     fun getUnreadChapterNum() = max(totalChapterNum - durChapterIndex - 1, 0)
 
+    /** 按当前章节占总章节数估算进度，包含当前章；尚未开始阅读时返回零。 */
+    fun getReadProgress(): Double {
+        if (totalChapterNum <= 0 || durChapterIndex < 0 ||
+            (durChapterIndex == 0 && durChapterPos <= 0)
+        ) {
+            return 0.0
+        }
+        return ((durChapterIndex.toDouble() + 1) / totalChapterNum).coerceIn(0.0, 1.0)
+    }
+
     /** 仅筛选展示内容；搜索仍使用包含全部来源的 [BookUiItem.displayTags]。 */
     fun getDisplayTags(
         showCustomTags: Boolean = true,
