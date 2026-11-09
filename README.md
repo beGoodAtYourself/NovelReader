@@ -1,4 +1,6 @@
-# Legado with MD3
+# NovelReader
+
+NovelReader 是由 Lix 维护的 Android 本地阅读应用，专注于导入设备中的书籍、离线阅读和本地备份。主界面保留“书架”和“我的”，日常阅读无需联网。
 
 ## 下载最新版 APK
 
@@ -14,126 +16,68 @@
 
 可下载 [SHA-256 校验文件](https://github.com/beGoodAtYourself/NovelReader/releases/download/v3.26.19-local/SHA256SUMS.txt) 核对安装包完整性。
 
-## 当前定制版：本地阅读
+## 主要功能
 
-本目录当前构建为 `3.26.19-local`，主界面只保留书架和“我的”。保留本地书籍导入、阅读排版、翻页、书签、阅读记录、本地封面、离线系统朗读和本地备份恢复。
+- **本地书籍**：导入设备中的 TXT、EPUB 等书籍，管理书架、分组和本地封面。
+- **阅读设置**：调整字体、背景、行距和段距，选择翻页方式。
+- **阅读辅助**：保留目录、书签、正文搜索、阅读进度和阅读记录。
+- **本地规则**：支持替换净化、TXT 目录规则和标签规则。
+- **离线朗读**：使用系统文字转语音服务中已安装的离线音色。
+- **本地备份**：将阅读数据和设置备份到所选目录，并从本地文件恢复。
 
-已移除发现、订阅、在线书源入口、远程书籍、WebDAV、Web 服务、联网 AI、翻译、云端朗读、自动更新和 Firebase 统计。安装包不申请互联网及局域网访问权限。系统朗读需要设备已安装离线音色。
+## 开始使用
 
-旧数据库结构和部分历史路由类型继续保留，便于覆盖安装和恢复本地备份。旧远程书籍不会在本地书架中展示，旧远程配置和导航不会重新启用功能；已有数据不会被批量删除。
+1. 安装适合设备架构的 APK，将需要阅读的书籍文件保存到设备。
+2. 在书架中导入本地书籍，打开书籍后按需调整阅读样式。
+3. 如需朗读，先在系统文字转语音设置中安装可离线使用的音色。
+4. 在“我的 → 设置”中进行本地备份与恢复；后续更新通过本项目的 GitHub Release 手动下载安装。
 
-本机已配置便携构建环境，可运行 `./tools/build-local.ps1 -Configuration Release`。ARM64 安装包位于 `app/build/outputs/apk/app/release/`。`.local-build/` 中的 SDK、缓存和签名配置不提交到仓库；后续覆盖安装需沿用同一签名。
+正式 APK 沿用 NovelReader 本地版签名，支持覆盖安装同签名版本。旧版本中的远程书籍不会在本地书架展示，恢复旧设置也不会重新启用在线功能。
 
-以下保留上游项目介绍，功能范围以本地版说明为准。
+## 离线与数据说明
 
-<p align="left">
-  <a href="https://github.com/HapeLee/legado-with-MD3">简体中文</a> ｜ 
-  <a href="https://github.com/HapeLee/legado-with-MD3/blob/main/English.md">English</a>
-</p>
+本地版不提供在线书源、发现、订阅、Web 服务、WebDAV 同步、联网 AI、翻译或云端朗读，也不进行应用内自动更新。
 
-## 📖 介绍
+- 安装包不申请互联网及局域网访问权限，不包含 Firebase 统计。
+- 书籍、阅读进度、书签、阅读记录和设置保存在当前设备；备份写入用户选择的位置。
+- 崩溃日志保存在本地，可在关于页面查看、清除或手动保存，不自动上传。
+- 项目链接由系统浏览器打开，复制和分享由接收内容的应用处理。
 
-**Legado with MD3** 是基于开源项目 [阅读 (Legado)](https://github.com/gedoor/legado) 开发的 Material
-Design 3 风格重构版本。
+书籍内容由用户自行导入，应用不提供书籍资源。详细数据处理方式见[本地阅读版隐私说明](app/src/main/assets/privacyPolicy.md)。
 
-本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose
-框架，目标是提供更加现代、流畅且一致的阅读体验。
+## 从源码构建
 
-> [!CAUTION]
-> **注意事项：**
-> 由于使用 Monet 引擎重构了主题系统，官方版本的主题在此版本中不再可用。
->
-> **Android 12 以下设备：**
-> 暂时无法使用自定义主题与动态取色功能。此限制将在 Jetpack Compose
-> 迁移完成后得到解决（由于开发者精力有限，迁移过程将持续较长时间）。
+开发使用 JDK 21 和 Android SDK，当前 `compileSdk` 为 37.1，最低支持 Android 8.0（API 26）。配置好 `JAVA_HOME` 和 Android SDK 路径后，可在 Windows PowerShell 中构建 Debug 版：
 
----
+```powershell
+.\gradlew.bat :app:assembleAppDebug
+```
 
-## ✨ 分支特性
+Debug APK 输出到 `app/build/outputs/apk/app/debug/`。
 
-相比于官方版本，本项目具有以下独有特性：
+仓库也提供[便携环境构建脚本](tools/build-local.ps1)。使用前需自行准备 `.local-build/` 中的 JDK 21、Android SDK、Gradle 9.8.0，以及正式版签名配置，再执行：
 
-* **全新主题：** 全新 Material Design 3 设计界面，支持 **预测性返回手势** 与 **共享元素动画**。
-* **阅读界面：** 更加个性化的阅读界面与菜单配置。
-* **阅读记录：** 提供详尽的阅读记录，支持 **时间轴** 与 **章节维度** 统计。
-* **体验增强：** 更健全的 **漫画阅读** 、 **有声书** 与 **发现** 等界面体验。
-* **书架布局：** 更多的书架布局选择，针对 **平板端** 进行了专门的界面优化。
-* **实用功能：** 新增书籍备注、智能伴生分组（自动归类已读/未读），支持**手柄**上下**翻页**。
+```powershell
+.\tools\build-local.ps1 -Configuration Release
+```
 
----
+正式 APK 输出到 `app/build/outputs/apk/app/release/`。本机构建工具、缓存和签名配置不随仓库提供；需要覆盖安装的后续版本应沿用同一签名。
 
-## 🛠️ 核心功能
+## 致谢
 
-1. **多格式支持：** 支持本地 TXT、EPUB 阅读，智能扫描本地文件。
-2. **高度自定义：** 切换字体、背景、行距、段距、加粗、简繁转换等。
-3. **净化替换：** 强力去除广告，替换正文内容。
-4. **翻页模式：** 覆盖、仿真、滑动、滚动等多种模式随心切换。
-5. **完全开源：** 无广告，持续迭代优化。
+NovelReader 基于 [gedoor/legado](https://github.com/gedoor/legado) 和 [HapeLee/legado-with-MD3](https://github.com/HapeLee/legado-with-MD3) 定制，感谢原项目作者及所有贡献者。
 
----
+同时保留对以下项目的致谢：
 
-## 💬 交流
+- [Luoyacheng/legado](https://github.com/Luoyacheng/legado)：扩展功能。
+- [komikku-app/komikku](https://github.com/komikku-app/komikku)：界面灵感与 Compose 控件。
+- [FoedusProgramme/Gramophone](https://github.com/FoedusProgramme/Gramophone)：界面灵感与 View 系统的封面取色方法。
+- [jordond/MaterialKolor](https://github.com/jordond/MaterialKolor)：基于 Jetpack Compose 的取色实现。
+- [Calvin-LL/Reorderable](https://github.com/Calvin-LL/Reorderable)：基于 Jetpack Compose 的拖动排序实现。
+- 其他为原项目和本地阅读版提供支持的开源项目与贡献者。
 
-* **Telegram 群组：** [Legado with MD3](https://t.me/materado)
-* **版本发布：**
-  最新版本会自动发布至群组，也可在 [GitHub Releases](https://github.com/HapeLee/legado-with-MD3/releases)
-  下载。
+## 许可证
 
----
+项目采用 **GNU General Public License v3.0（GPL-3.0）**，完整条款见 [LICENSE](LICENSE)。原项目及第三方组件的署名、版权和许可证声明继续保留，各组件遵循各自的许可证。
 
-## ❤️ 致谢
-
-感谢以下优秀开源项目提供的灵感与技术支持：
-
-* [gedoor/legado](https://github.com/gedoor/legado) (这个项目最吊的老爹)
-* [Luoyacheng/legado](https://github.com/Luoyacheng/legado) (提供了更多的扩展功能)
-* [komikku-app/komikku](https://github.com/komikku-app/komikku) (提供了界面灵感与一些 Compose
-  的优秀控件)
-* [FoedusProgramme/Gramophone](https://github.com/FoedusProgramme/Gramophone) (提供了界面灵感与 View
-  系统的封面取色方法)
-* [jordond/MaterialKolor](https://github.com/jordond/MaterialKolor) (基于 Jetpack Compose
-  优秀的取色实现)
-* [Calvin-LL/Reorderable](https://github.com/Calvin-LL/Reorderable) (基于 Jetpack Compose
-  优秀的拖动排序实现)
-* 以及更多开源项目...
-
-## ⚠️ 用户协议与免责声明
-
-> **【特别提示】**
-> 在下载、安装或使用本软件前，请您务必仔细阅读并充分理解本协议及免责声明的全部内容。您一旦下载、安装或使用本软件，即视为已阅读、理解并同意接受本声明的全部内容。
-
-### 一、软件性质说明
-
-1. 本软件是一款用户可配置的本地化网页内容浏览工具，提供网页访问、内容解析、文本提取、阅读排版与数据管理等技术功能。
-2. 本软件默认状态下不预置、不内置、不提供任何第三方网站内容、数据资源或解析规则。
-3. 本软件开发者不提供任何内容运营、内容存储、内容发布或内容传播服务。
-4. 用户可基于自身需求，自行配置或导入第三方规则，以实现对公开网页内容的个性化浏览与处理。
-
-### 二、用户行为与规则说明
-
-1. 用户可自行创建、编辑、导入或使用第三方分享的解析规则（以下简称"规则"）。
-2. 相关规则仅用于定义网页内容的获取、提取与显示方式，其来源、合法性、准确性与适用性均由用户自行判断并承担责任。
-3. 用户使用规则访问第三方网站时，相关网络请求由用户设备直接向目标网站发起并接收数据。本软件仅提供本地解析与展示能力，不对第三方网站内容进行修改、编辑或再分发。
-4. 用户应遵守所在地法律法规、网络安全要求以及相关网站的服务协议与版权规范，不得利用本软件从事侵犯知识产权、非法传播、未授权数据获取、破坏网络服务或其他违法违规行为。
-
-### 三、第三方内容与社区说明
-
-1. 任何由第三方建立或维护的规则分享平台、论坛、交流群组、网站或其他社区，均属于独立运营的第三方平台，与本软件开发者无隶属关系。
-2. 开发者不参与第三方规则、内容或社区的制作、发布、运营、维护与传播行为，亦不对相关内容承担主动审查义务。
-3. 用户因使用第三方规则或访问第三方网站而产生的风险，包括但不限于版权纠纷、数据安全风险、网络访问风险或其他法律风险，应由相关行为主体依法承担相应责任。
-
-### 四、隐私与数据说明
-
-1. 本软件主要功能运行于用户本地设备，不设立用于提供网页内容服务的自有内容服务器。
-2. 本软件不会主动收集、上传或存储用户的阅读内容、规则列表、浏览记录或其他个人隐私数据。
-3. 为提升软件稳定性与兼容性，本软件可能集成第三方统计或崩溃分析服务（如 Firebase Crashlytics
-   等），用于收集匿名化的崩溃日志、性能信息及基础设备信息。
-4. 部分网络、存储或同步权限，仅用于实现用户主动启用的本地备份、WebDAV 同步或跨设备数据同步等功能。
-
-### 五、知识产权保护
-
-1. 开发者尊重并保护知识产权权利人的合法权益，并反对任何侵犯著作权、商标权或其他合法权益的行为。
-2. 用户应确保其使用本软件获取、处理或访问相关内容的行为符合适用法律法规及权利要求。
-3. 若权利人认为某些第三方规则存在涉嫌侵权情形，可依法向相关内容实际托管方主张权利。
-4. 权利人亦可向开发者提交包含身份证明、权属证明、具体规则信息及相关说明的有效通知。开发者将在合理技术能力范围内，对涉嫌违规规则采取必要处理措施。
-
+应用内可通过“我的 → 关于 → 开源许可”查看许可证，随应用附带的文本见 [LICENSE.md](app/src/main/assets/LICENSE.md)。
