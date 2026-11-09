@@ -6,4 +6,5 @@
     <string name="local_reader_system_voice">Offline system narration</string>
     <string name="local_reader_offline_voice_summary">Use only offline voices installed on this device</string>
     <string name="local_reader_no_offline_voice">No offline voice found. Install one in system text-to-speech settings first.</string>
+    <string name="local_reader_developer_summary">Current version developer · Lix</string>
 </resources>

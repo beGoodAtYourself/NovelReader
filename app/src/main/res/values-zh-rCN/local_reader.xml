@@ -6,4 +6,5 @@
     <string name="local_reader_system_voice">系统离线朗读</string>
     <string name="local_reader_offline_voice_summary">仅使用设备上已安装的离线音色</string>
     <string name="local_reader_no_offline_voice">未找到离线音色，请先在系统文字转语音设置中安装</string>
+    <string name="local_reader_developer_summary">当前版本开发者 · Lix</string>
 </resources>

@@ -74,6 +74,7 @@ private fun MaterialAboutScreen(
     versionName: String,
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
+    val contributorsTitle = stringResource(R.string.contributors)
     val privacyPolicyTitle = stringResource(R.string.about_privacy_policy_title)
     val licenseTitle = stringResource(R.string.about_license_title)
     val disclaimerTitle = stringResource(R.string.about_disclaimer_title)
@@ -136,8 +137,9 @@ private fun MaterialAboutScreen(
             ) {
                 SettingItemWithDivider {
                     SettingItem(
-                        title = stringResource(R.string.contributors),
-                        onClick = { onIntent(AboutIntent.ShowMdFile("Legado / 阅读 MD3", "localCredits.md")) }
+                        title = contributorsTitle,
+                        description = stringResource(R.string.local_reader_developer_summary),
+                        onClick = { onIntent(AboutIntent.ShowMdFile(contributorsTitle, "localCredits.md")) }
                     )
                 }
                 SettingItemWithDivider {

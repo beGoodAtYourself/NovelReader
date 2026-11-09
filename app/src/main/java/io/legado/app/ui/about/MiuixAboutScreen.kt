@@ -181,6 +181,7 @@ private fun AboutContent(
 ) {
     val appState = LocalAppState.current
     val isWideScreen = LocalIsWideScreen.current
+    val contributorsTitle = stringResource(R.string.contributors)
     val privacyPolicyTitle = stringResource(R.string.about_privacy_policy_title)
     val licenseTitle = stringResource(R.string.about_license_title)
     val disclaimerTitle = stringResource(R.string.about_disclaimer_title)
@@ -387,11 +388,11 @@ private fun AboutContent(
                         ),
                     ) {
                         ArrowPreference(
-                            title = stringResource(R.string.contributors),
+                            title = contributorsTitle,
                             endActions = {
-                                ValueText("GitHub")
+                                ValueText("Lix")
                             },
-                            onClick = { onIntent(AboutIntent.ShowMdFile("Legado / 阅读 MD3", "localCredits.md")) },
+                            onClick = { onIntent(AboutIntent.ShowMdFile(contributorsTitle, "localCredits.md")) },
                         )
                     }
 
